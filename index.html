@@ -5,42 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vampire Deauther - Web Flasher</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0d1117;
             color: #c9d1d9;
             line-height: 1.6;
         }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
         header {
             text-align: center;
             padding: 40px 20px;
             border-bottom: 1px solid #30363d;
         }
-
-        h1 {
-            font-size: 2.5rem;
-            color: #58a6ff;
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            font-size: 1.1rem;
-            color: #8b949e;
-        }
-
+        h1 { font-size: 2.5rem; color: #58a6ff; margin-bottom: 10px; }
+        .subtitle { font-size: 1.1rem; color: #8b949e; }
         .flasher-box {
             background: #161b22;
             border: 1px solid #30363d;
@@ -48,7 +27,6 @@
             padding: 40px;
             margin: 40px 0;
         }
-
         .btn {
             width: 100%;
             padding: 16px;
@@ -64,34 +42,24 @@
             transition: all 0.2s;
             margin: 10px 0;
         }
-
         .btn-primary {
             background: #238636;
             color: white;
         }
-
         .btn-primary:hover:not(:disabled) {
             background: #2ea043;
             transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(35, 134, 54, 0.3);
         }
-
         .btn-secondary {
             background: #21262d;
             color: #c9d1d9;
             border: 1px solid #30363d;
         }
-
-        .btn-secondary:hover:not(:disabled) {
-            background: #30363d;
-        }
-
         .btn:disabled {
             background: #30363d;
             color: #6e7681;
             cursor: not-allowed;
         }
-
         .status-box {
             background: #0d1117;
             border: 1px solid #30363d;
@@ -103,17 +71,11 @@
             max-height: 400px;
             overflow-y: auto;
         }
-
-        .log-line {
-            margin: 4px 0;
-            padding: 2px 0;
-        }
-
+        .log-line { margin: 4px 0; padding: 2px 0; }
         .log-info { color: #58a6ff; }
         .log-success { color: #3fb950; }
         .log-error { color: #f85149; }
         .log-warning { color: #d29922; }
-
         .progress-container {
             width: 100%;
             height: 30px;
@@ -124,7 +86,6 @@
             margin: 20px 0;
             display: none;
         }
-
         .progress-bar {
             height: 100%;
             background: linear-gradient(90deg, #238636, #2ea043);
@@ -136,7 +97,6 @@
             color: white;
             font-weight: 500;
         }
-
         .info-box {
             background: #1f2937;
             border-left: 4px solid #58a6ff;
@@ -144,7 +104,6 @@
             margin: 20px 0;
             border-radius: 4px;
         }
-
         .warning-box {
             background: #2d2a1f;
             border-left: 4px solid #d29922;
@@ -152,11 +111,6 @@
             margin: 20px 0;
             border-radius: 4px;
         }
-
-        .steps {
-            margin: 20px 0;
-        }
-
         .step {
             padding: 15px;
             margin: 10px 0;
@@ -164,7 +118,6 @@
             border: 1px solid #30363d;
             border-radius: 6px;
         }
-
         .step-number {
             display: inline-block;
             width: 30px;
@@ -177,7 +130,6 @@
             font-weight: bold;
             margin-right: 10px;
         }
-
         code {
             background: #161b22;
             padding: 2px 6px;
@@ -185,16 +137,8 @@
             color: #ff7b72;
             font-size: 0.9em;
         }
-
-        a {
-            color: #58a6ff;
-            text-decoration: none;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
+        a { color: #58a6ff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
         footer {
             text-align: center;
             padding: 40px 20px;
@@ -212,11 +156,17 @@
         </header>
 
         <div class="flasher-box">
+            <div class="warning-box">
+                <strong>⚠️ XMODEM Protocol Required</strong><br>
+                RTL8720DN uses XMODEM protocol for flashing. Web Serial API has limitations with XMODEM timing.<br><br>
+                <strong>Recommended:</strong> Use Arduino IDE or download the EXE flasher tool instead.
+            </div>
+
             <div class="info-box">
                 <strong>ℹ️ Requirements:</strong><br>
-                • Chrome, Edge, or Opera browser (Web Serial API support)<br>
-                • BW16 module connected via USB<br>
-                • Proper wiring (see instructions below)
+                • Chrome, Edge, or Opera browser<br>
+                • BW16 in bootloader mode (hold BURN, press RST)<br>
+                • Connected to LOG UART (PA7/PA8, not PB1/PB2)
             </div>
 
             <button id="connectBtn" class="btn btn-primary">
@@ -224,7 +174,7 @@
             </button>
 
             <button id="flashBtn" class="btn btn-secondary" disabled>
-                <span>⚡</span> Flash Firmware
+                <span>⚡</span> Flash Firmware (Experimental)
             </button>
 
             <div class="progress-container" id="progressContainer">
@@ -232,7 +182,8 @@
             </div>
 
             <div class="status-box" id="statusBox">
-                <div class="log-line log-info">[INFO] Ready to flash. Click "Connect BW16" to begin.</div>
+                <div class="log-line log-warning">[WARNING] Web-based XMODEM flashing is experimental and may fail.</div>
+                <div class="log-line log-info">[INFO] For reliable flashing, use Arduino IDE method below.</div>
             </div>
 
             <a href="vampire_deauther.fap" download class="btn btn-secondary" style="text-decoration: none;">
@@ -241,62 +192,82 @@
         </div>
 
         <div class="flasher-box">
-            <h2 style="color: #58a6ff; margin-bottom: 20px;">📋 Wiring Instructions</h2>
+            <h2 style="color: #58a6ff; margin-bottom: 20px;">📋 Arduino IDE Method (Recommended)</h2>
             
-            <div class="warning-box">
-                <strong>⚠️ Important:</strong> BW16 requires special wiring for flashing!
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>Download & Install Arduino IDE:</strong><br>
+                <a href="https://www.arduino.cc/en/software">https://www.arduino.cc/en/software</a>
             </div>
 
-            <div class="steps">
-                <div class="step">
-                    <span class="step-number">1</span>
-                    <strong>Connect USB-to-UART to LOG UART (not AT UART):</strong><br>
-                    • BW16 TX (PA7/D0) → UART RX<br>
-                    • BW16 RX (PA8/D1) → UART TX<br>
-                    • BW16 GND → UART GND
-                </div>
-
-                <div class="step">
-                    <span class="step-number">2</span>
-                    <strong>Optional shortcut for rtlduino board:</strong><br>
-                    Short these pins to use onboard USB:<br>
-                    • D1 ↔ D5 (PA8 ↔ PB2)<br>
-                    • D0 ↔ D4 (PA7 ↔ PB1)
-                </div>
-
-                <div class="step">
-                    <span class="step-number">3</span>
-                    <strong>Enter flash mode:</strong><br>
-                    • Hold BURN button<br>
-                    • Press and release RST button<br>
-                    • Release BURN button
-                </div>
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>Add RTL8720DN Board Support:</strong><br>
+                • Open Arduino IDE<br>
+                • File → Preferences<br>
+                • Add to "Additional Boards Manager URLs":<br>
+                <code style="display: block; margin-top: 5px;">https://github.com/ambiot/ambd_arduino/raw/master/Arduino_package/package_realtek.com_amebad_index.json</code><br>
+                • Tools → Board → Boards Manager<br>
+                • Search "Realtek Ameba" and install
             </div>
+
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>Prepare BW16 for Upload:</strong><br>
+                • Connect BW16 USB to computer<br>
+                • <strong>Important:</strong> Short these pins if using rtlduino:<br>
+                  D0 ↔ D4 (PA7 ↔ PB1)<br>
+                  D1 ↔ D5 (PA8 ↔ PB2)
+            </div>
+
+            <div class="step">
+                <span class="step-number">4</span>
+                <strong>Flash Using Image Tool:</strong><br>
+                • Tools → Board → "BW16(RTL8720DN)"<br>
+                • Tools → Port → Select your COM port<br>
+                • Tools → Upload Speed → 115200<br>
+                • Enter upload mode: Hold BURN → Press RST → Release RST → Release BURN<br>
+                • Download <code>km0_km4_image2.bin</code> from this page<br>
+                • Use amebad_image_tool to flash:<br>
+                <code style="display: block; margin-top: 5px; white-space: pre;">
+Windows:
+C:\Users\YourUser\AppData\Local\Arduino15\packages\realtek\tools\ameba_d_tools\1.0.5\windows\image_tool\amebad_image_tool.exe COMX
+
+Mac:
+~/Library/Arduino15/packages/realtek/tools/ameba_d_tools/1.0.5/tools/macos/image_tool/amebad_image_tool /dev/cu.usbserial-*
+
+Linux:
+~/.arduino15/packages/realtek/tools/ameba_d_tools/1.0.5/linux/image_tool/amebad_image_tool /dev/ttyUSB0
+                </code>
+            </div>
+
+            <a href="km0_km4_image2.bin" download class="btn btn-primary" style="text-decoration: none;">
+                <span>📥</span> Download km0_km4_image2.bin
+            </a>
         </div>
 
         <div class="flasher-box">
-            <h2 style="color: #58a6ff; margin-bottom: 20px;">🎮 After Flashing</h2>
+            <h2 style="color: #58a6ff; margin-bottom: 20px;">🔧 Wiring to Flipper Zero</h2>
             
-            <div class="steps">
-                <div class="step">
-                    <span class="step-number">1</span>
-                    Connect BW16 to Flipper Zero GPIO:<br>
-                    • BW16 TX → Flipper Pin 14 (RX)<br>
-                    • BW16 RX → Flipper Pin 13 (TX)<br>
-                    • BW16 3V3 → Flipper Pin 9<br>
-                    • BW16 GND → Flipper Pin 18
-                </div>
+            <div class="step">
+                <span class="step-number">1</span>
+                <strong>After flashing, wire BW16 to Flipper:</strong><br>
+                • BW16 TX (PA7) → Flipper Pin 14 (RX)<br>
+                • BW16 RX (PA8) → Flipper Pin 13 (TX)<br>
+                • BW16 3V3 → Flipper Pin 9<br>
+                • BW16 GND → Flipper Pin 18
+            </div>
 
-                <div class="step">
-                    <span class="step-number">2</span>
-                    Install <code>vampire_deauther.fap</code> to Flipper:<br>
-                    Copy to <code>/ext/apps/GPIO/</code>
-                </div>
+            <div class="step">
+                <span class="step-number">2</span>
+                <strong>Install FAP:</strong><br>
+                • Copy <code>vampire_deauther.fap</code> to <code>/ext/apps/GPIO/</code>
+            </div>
 
-                <div class="step">
-                    <span class="step-number">3</span>
-                    Launch app: <strong>GPIO → Vampire Deauther</strong>
-                </div>
+            <div class="step">
+                <span class="step-number">3</span>
+                <strong>Launch:</strong><br>
+                • GPIO → Vampire Deauther
             </div>
         </div>
 
@@ -310,235 +281,37 @@
     </div>
 
     <script type="module">
-        // RTL8720DN Web Flasher
-        // Based on rtltool.py protocol
-
-        let port;
-        let reader;
-        let writer;
-        let connected = false;
+        // Simplified version - shows that web flashing is experimental
+        let port, reader, writer, connected = false;
 
         const connectBtn = document.getElementById('connectBtn');
         const flashBtn = document.getElementById('flashBtn');
         const statusBox = document.getElementById('statusBox');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressBar = document.getElementById('progressBar');
 
-        // Logging
         function log(message, type = 'info') {
             const line = document.createElement('div');
             line.className = `log-line log-${type}`;
-            const timestamp = new Date().toLocaleTimeString();
-            line.textContent = `[${timestamp}] ${message}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
             statusBox.appendChild(line);
             statusBox.scrollTop = statusBox.scrollHeight;
         }
 
-        function updateProgress(percent) {
-            progressContainer.style.display = 'block';
-            progressBar.style.width = `${percent}%`;
-            progressBar.textContent = `${percent}%`;
-        }
-
-        // Serial utilities
-        async function waitForByte(expected, timeout = 5000) {
-            const startTime = Date.now();
-            while (Date.now() - startTime < timeout) {
-                try {
-                    const { value, done } = await reader.read();
-                    if (done) throw new Error('Reader closed');
-                    if (value && value.length > 0) {
-                        log(`Received: 0x${value[0].toString(16)}`, 'info');
-                        if (value[0] === expected) {
-                            return true;
-                        }
-                    }
-                } catch (error) {
-                    log(`Read error: ${error.message}`, 'warning');
-                }
-                await new Promise(resolve => setTimeout(resolve, 10));
-            }
-            throw new Error(`Timeout waiting for byte 0x${expected.toString(16)}`);
-        }
-
-        async function writeBytes(data) {
-            await writer.write(new Uint8Array(data));
-        }
-
-        async function enterFlashMode() {
-            log('Entering flash mode...', 'info');
-            
-            // Reset sequence: RTS/DTR manipulation
-            // BOOT=LOW (DTR=LOW), RST pulse (RTS toggle)
-            await port.setSignals({ dataTerminalReady: false, requestToSend: true });
-            await new Promise(resolve => setTimeout(resolve, 100));
-            await port.setSignals({ dataTerminalReady: true, requestToSend: false });
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // Read any initial bytes from bootloader
-            log('Reading bootloader response...', 'info');
-            setTimeout(async () => {
-                try {
-                    for (let i = 0; i < 50; i++) {
-                        const { value, done } = await reader.read();
-                        if (done) break;
-                        if (value && value.length > 0) {
-                            const hex = Array.from(value).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ');
-                            log(`Boot: ${hex}`, 'info');
-                        }
-                        await new Promise(resolve => setTimeout(resolve, 50));
-                    }
-                } catch (e) {
-                    log(`Read done`, 'info');
-                }
-            }, 100);
-            
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            log('Flash mode entered', 'success');
-        }
-
-        async function loadFlashStub() {
-            log('Loading flash stub to SRAM...', 'info');
-            
-            // Load imgtool_flashloader_amebad.bin
-            const response = await fetch('imgtool_flashloader_amebad.bin');
-            const stub = await response.arrayBuffer();
-            
-            log(`Stub size: ${stub.byteLength} bytes`, 'info');
-            
-            // Write to SRAM at 0x00082000
-            // Protocol: CMD_WM (0x52) + address + size + data
-            const addr = 0x00082000;
-            const size = stub.byteLength;
-            
-            // Send write memory command
-            const cmd = [
-                0x52, // CMD_WM
-                (addr >> 24) & 0xFF,
-                (addr >> 16) & 0xFF,
-                (addr >> 8) & 0xFF,
-                addr & 0xFF,
-                (size >> 24) & 0xFF,
-                (size >> 16) & 0xFF,
-                (size >> 8) & 0xFF,
-                size & 0xFF
-            ];
-            
-            log('Sending write memory command...', 'info');
-            await writeBytes(cmd);
-            log('Waiting for ACK...', 'info');
-            await waitForByte(0x06); // ACK
-            log('✓ ACK received, sending stub data...', 'success');
-            
-            // Send stub data in chunks
-            const chunkSize = 256;
-            const data = new Uint8Array(stub);
-            
-            for (let i = 0; i < data.length; i += chunkSize) {
-                const chunk = data.slice(i, Math.min(i + chunkSize, data.length));
-                await writeBytes(chunk);
-                await waitForByte(0x06); // ACK
-                
-                const percent = Math.floor((i / data.length) * 30);
-                updateProgress(percent);
-                
-                if (i % 1024 === 0) {
-                    log(`Written ${i}/${data.length} bytes`, 'info');
-                }
-            }
-            
-            log('Flash stub loaded successfully', 'success');
-        }
-
-        async function flashFirmware(firmware) {
-            log('Starting firmware flash...', 'info');
-            updateProgress(30);
-            
-            const flashAddr = 0x08000000;
-            const chunkSize = 4096;
-            const data = new Uint8Array(firmware);
-            
-            log(`Firmware size: ${data.length} bytes`, 'info');
-            
-            // Erase flash sectors
-            log('Erasing flash sectors...', 'warning');
-            const sectorsToErase = Math.ceil(data.length / 4096);
-            
-            for (let i = 0; i < sectorsToErase; i++) {
-                const sectorAddr = flashAddr + (i * 4096);
-                
-                // CMD_FE (Flash Erase)
-                const eraseCmd = [
-                    0x45, // CMD_FE
-                    (sectorAddr >> 24) & 0xFF,
-                    (sectorAddr >> 16) & 0xFF,
-                    (sectorAddr >> 8) & 0xFF,
-                    sectorAddr & 0xFF
-                ];
-                
-                await writeBytes(eraseCmd);
-                await waitForByte(0x06);
-                
-                const percent = 30 + Math.floor((i / sectorsToErase) * 20);
-                updateProgress(percent);
-            }
-            
-            log('Flash erased, writing firmware...', 'info');
-            
-            // Write firmware
-            for (let i = 0; i < data.length; i += chunkSize) {
-                const chunk = data.slice(i, Math.min(i + chunkSize, data.length));
-                const addr = flashAddr + i;
-                
-                // CMD_FW (Flash Write)
-                const writeCmd = [
-                    0x57, // CMD_FW
-                    (addr >> 24) & 0xFF,
-                    (addr >> 16) & 0xFF,
-                    (addr >> 8) & 0xFF,
-                    addr & 0xFF,
-                    (chunk.length >> 8) & 0xFF,
-                    chunk.length & 0xFF
-                ];
-                
-                await writeBytes(writeCmd);
-                await waitForByte(0x06);
-                await writeBytes(chunk);
-                await waitForByte(0x06);
-                
-                const percent = 50 + Math.floor((i / data.length) * 50);
-                updateProgress(percent);
-            }
-            
-            log('✓ Firmware flashed successfully!', 'success');
-            updateProgress(100);
-        }
-
-        // Event handlers
         connectBtn.addEventListener('click', async () => {
             try {
                 if (!('serial' in navigator)) {
-                    log('ERROR: Web Serial API not supported. Use Chrome/Edge/Opera.', 'error');
+                    log('ERROR: Web Serial API not supported', 'error');
                     return;
                 }
 
-                log('Requesting serial port access...', 'info');
                 port = await navigator.serial.requestPort();
-                
-                await port.open({ 
-                    baudRate: 115200,
-                    dataBits: 8,
-                    stopBits: 1,
-                    parity: 'none',
-                    flowControl: 'none'
-                });
-                
+                await port.open({ baudRate: 115200 });
                 reader = port.readable.getReader();
                 writer = port.writable.getWriter();
                 
                 connected = true;
-                log('✓ Connected to BW16!', 'success');
+                log('✓ Connected to BW16', 'success');
+                log('WARNING: XMODEM protocol via Web Serial is unreliable', 'warning');
+                log('Recommend using Arduino IDE method instead', 'warning');
                 
                 connectBtn.textContent = '✓ Connected';
                 connectBtn.disabled = true;
@@ -549,38 +322,11 @@
             }
         });
 
-        flashBtn.addEventListener('click', async () => {
-            if (!connected) {
-                log('ERROR: Not connected. Connect first.', 'error');
-                return;
-            }
-
-            flashBtn.disabled = true;
-            
-            try {
-                log('=== FLASHING STARTED ===', 'info');
-                
-                // Step 1: Enter flash mode
-                await enterFlashMode();
-                
-                // Step 2: Load flash stub
-                await loadFlashStub();
-                
-                // Step 3: Download firmware
-                log('Downloading firmware...', 'info');
-                const response = await fetch('km0_km4_image2.bin');
-                const firmware = await response.arrayBuffer();
-                
-                // Step 4: Flash firmware
-                await flashFirmware(firmware);
-                
-                log('=== FLASH COMPLETE ===', 'success');
-                log('You can now disconnect and wire BW16 to Flipper Zero!', 'info');
-                
-            } catch (error) {
-                log(`ERROR: ${error.message}`, 'error');
-                flashBtn.disabled = false;
-            }
+        flashBtn.addEventListener('click', () => {
+            log('ERROR: Web-based XMODEM not fully implemented', 'error');
+            log('Please use Arduino IDE method above', 'warning');
+            log('RTL8720DN requires precise XMODEM timing', 'info');
+            log('Web Serial API has timing limitations', 'info');
         });
     </script>
 </body>
