@@ -369,10 +369,31 @@
             log('Entering flash mode...', 'info');
             
             // Reset sequence: RTS/DTR manipulation
+            // BOOT=LOW (DTR=LOW), RST pulse (RTS toggle)
             await port.setSignals({ dataTerminalReady: false, requestToSend: true });
             await new Promise(resolve => setTimeout(resolve, 100));
             await port.setSignals({ dataTerminalReady: true, requestToSend: false });
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Read any initial bytes from bootloader
+            log('Reading bootloader response...', 'info');
+            setTimeout(async () => {
+                try {
+                    for (let i = 0; i < 50; i++) {
+                        const { value, done } = await reader.read();
+                        if (done) break;
+                        if (value && value.length > 0) {
+                            const hex = Array.from(value).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ');
+                            log(`Boot: ${hex}`, 'info');
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                    }
+                } catch (e) {
+                    log(`Read done`, 'info');
+                }
+            }, 100);
+            
+            await new Promise(resolve => setTimeout(resolve, 2000));
             
             log('Flash mode entered', 'success');
         }
