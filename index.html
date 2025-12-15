@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vampire Deauther - Web Flasher</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            border-bottom: 1px solid #30363d;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #58a6ff;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #8b949e;
+        }
+
+        .flasher-box {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 40px;
+            margin: 40px 0;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+            margin: 10px 0;
+        }
+
+        .btn-primary {
+            background: #238636;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #2ea043;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(35, 134, 54, 0.3);
+        }
+
+        .btn-secondary {
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #30363d;
+        }
+
+        .btn:disabled {
+            background: #30363d;
+            color: #6e7681;
+            cursor: not-allowed;
+        }
+
+        .status-box {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-line {
+            margin: 4px 0;
+            padding: 2px 0;
+        }
+
+        .log-info { color: #58a6ff; }
+        .log-success { color: #3fb950; }
+        .log-error { color: #f85149; }
+        .log-warning { color: #d29922; }
+
+        .progress-container {
+            width: 100%;
+            height: 30px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #238636, #2ea043);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 500;
+        }
+
+        .info-box {
+            background: #1f2937;
+            border-left: 4px solid #58a6ff;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .warning-box {
+            background: #2d2a1f;
+            border-left: 4px solid #d29922;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .steps {
+            margin: 20px 0;
+        }
+
+        .step {
+            padding: 15px;
+            margin: 10px 0;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+        }
+
+        .step-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: #58a6ff;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        code {
+            background: #161b22;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #ff7b72;
+            font-size: 0.9em;
+        }
+
+        a {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #8b949e;
+            border-top: 1px solid #30363d;
+            margin-top: 60px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🦇 Vampire Deauther</h1>
+            <p class="subtitle">Web Flasher for BW16 (RTL8720DN)</p>
+        </header>
+
+        <div class="flasher-box">
+            <div class="info-box">
+                <strong>ℹ️ Requirements:</strong><br>
+                • Chrome, Edge, or Opera browser (Web Serial API support)<br>
+                • BW16 module connected via USB<br>
+                • Proper wiring (see instructions below)
+            </div>
+
+            <button id="connectBtn" class="btn btn-primary">
+                <span>🔌</span> Connect BW16
+            </button>
+
+            <button id="flashBtn" class="btn btn-secondary" disabled>
+                <span>⚡</span> Flash Firmware
+            </button>
+
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar">0%</div>
+            </div>
+
+            <div class="status-box" id="statusBox">
+                <div class="log-line log-info">[INFO] Ready to flash. Click "Connect BW16" to begin.</div>
+            </div>
+
+            <a href="vampire_deauther.fap" download class="btn btn-secondary" style="text-decoration: none;">
+                <span>📦</span> Download FAP for Flipper Zero
+            </a>
+        </div>
+
+        <div class="flasher-box">
+            <h2 style="color: #58a6ff; margin-bottom: 20px;">📋 Wiring Instructions</h2>
+            
+            <div class="warning-box">
+                <strong>⚠️ Important:</strong> BW16 requires special wiring for flashing!
+            </div>
+
+            <div class="steps">
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Connect USB-to-UART to LOG UART (not AT UART):</strong><br>
+                    • BW16 TX (PA7/D0) → UART RX<br>
+                    • BW16 RX (PA8/D1) → UART TX<br>
+                    • BW16 GND → UART GND
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Optional shortcut for rtlduino board:</strong><br>
+                    Short these pins to use onboard USB:<br>
+                    • D1 ↔ D5 (PA8 ↔ PB2)<br>
+                    • D0 ↔ D4 (PA7 ↔ PB1)
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Enter flash mode:</strong><br>
+                    • Hold BURN button<br>
+                    • Press and release RST button<br>
+                    • Release BURN button
+                </div>
+            </div>
+        </div>
+
+        <div class="flasher-box">
+            <h2 style="color: #58a6ff; margin-bottom: 20px;">🎮 After Flashing</h2>
+            
+            <div class="steps">
+                <div class="step">
+                    <span class="step-number">1</span>
+                    Connect BW16 to Flipper Zero GPIO:<br>
+                    • BW16 TX → Flipper Pin 14 (RX)<br>
+                    • BW16 RX → Flipper Pin 13 (TX)<br>
+                    • BW16 3V3 → Flipper Pin 9<br>
+                    • BW16 GND → Flipper Pin 18
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    Install <code>vampire_deauther.fap</code> to Flipper:<br>
+                    Copy to <code>/ext/apps/GPIO/</code>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    Launch app: <strong>GPIO → Vampire Deauther</strong>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Made with 🦇 by <a href="https://github.com/vampel">Vampel</a></p>
+            <p style="margin-top: 10px;">
+                <a href="https://github.com/vampel/Vampire-Deauther">GitHub</a> •
+                <a href="https://github.com/vampel/Vampire-Deauther/issues">Report Issues</a>
+            </p>
+        </footer>
+    </div>
+
+    <script type="module">
+        // RTL8720DN Web Flasher
+        // Based on rtltool.py protocol
+
+        let port;
+        let reader;
+        let writer;
+        let connected = false;
+
+        const connectBtn = document.getElementById('connectBtn');
+        const flashBtn = document.getElementById('flashBtn');
+        const statusBox = document.getElementById('statusBox');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+
+        // Logging
+        function log(message, type = 'info') {
+            const line = document.createElement('div');
+            line.className = `log-line log-${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            line.textContent = `[${timestamp}] ${message}`;
+            statusBox.appendChild(line);
+            statusBox.scrollTop = statusBox.scrollHeight;
+        }
+
+        function updateProgress(percent) {
+            progressContainer.style.display = 'block';
+            progressBar.style.width = `${percent}%`;
+            progressBar.textContent = `${percent}%`;
+        }
+
+        // Serial utilities
+        async function waitForByte(expected, timeout = 2000) {
+            const startTime = Date.now();
+            while (Date.now() - startTime < timeout) {
+                const { value, done } = await reader.read();
+                if (done) throw new Error('Reader closed');
+                if (value && value.length > 0 && value[0] === expected) {
+                    return true;
+                }
+            }
+            throw new Error(`Timeout waiting for byte 0x${expected.toString(16)}`);
+        }
+
+        async function writeBytes(data) {
+            await writer.write(new Uint8Array(data));
+        }
+
+        async function enterFlashMode() {
+            log('Entering flash mode...', 'info');
+            
+            // Reset sequence: RTS/DTR manipulation
+            await port.setSignals({ dataTerminalReady: false, requestToSend: true });
+            await new Promise(resolve => setTimeout(resolve, 100));
+            await port.setSignals({ dataTerminalReady: true, requestToSend: false });
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            log('Flash mode entered', 'success');
+        }
+
+        async function loadFlashStub() {
+            log('Loading flash stub to SRAM...', 'info');
+            
+            // Load imgtool_flashloader_amebad.bin
+            const response = await fetch('imgtool_flashloader_amebad.bin');
+            const stub = await response.arrayBuffer();
+            
+            log(`Stub size: ${stub.byteLength} bytes`, 'info');
+            
+            // Write to SRAM at 0x00082000
+            // Protocol: CMD_WM (0x52) + address + size + data
+            const addr = 0x00082000;
+            const size = stub.byteLength;
+            
+            // Send write memory command
+            const cmd = [
+                0x52, // CMD_WM
+                (addr >> 24) & 0xFF,
+                (addr >> 16) & 0xFF,
+                (addr >> 8) & 0xFF,
+                addr & 0xFF,
+                (size >> 24) & 0xFF,
+                (size >> 16) & 0xFF,
+                (size >> 8) & 0xFF,
+                size & 0xFF
+            ];
+            
+            await writeBytes(cmd);
+            await waitForByte(0x06); // ACK
+            
+            // Send stub data in chunks
+            const chunkSize = 1024;
+            const data = new Uint8Array(stub);
+            
+            for (let i = 0; i < data.length; i += chunkSize) {
+                const chunk = data.slice(i, Math.min(i + chunkSize, data.length));
+                await writeBytes(chunk);
+                await waitForByte(0x06); // ACK
+                
+                const percent = Math.floor((i / data.length) * 30);
+                updateProgress(percent);
+            }
+            
+            log('Flash stub loaded successfully', 'success');
+        }
+
+        async function flashFirmware(firmware) {
+            log('Starting firmware flash...', 'info');
+            updateProgress(30);
+            
+            const flashAddr = 0x08000000;
+            const chunkSize = 4096;
+            const data = new Uint8Array(firmware);
+            
+            log(`Firmware size: ${data.length} bytes`, 'info');
+            
+            // Erase flash sectors
+            log('Erasing flash sectors...', 'warning');
+            const sectorsToErase = Math.ceil(data.length / 4096);
+            
+            for (let i = 0; i < sectorsToErase; i++) {
+                const sectorAddr = flashAddr + (i * 4096);
+                
+                // CMD_FE (Flash Erase)
+                const eraseCmd = [
+                    0x45, // CMD_FE
+                    (sectorAddr >> 24) & 0xFF,
+                    (sectorAddr >> 16) & 0xFF,
+                    (sectorAddr >> 8) & 0xFF,
+                    sectorAddr & 0xFF
+                ];
+                
+                await writeBytes(eraseCmd);
+                await waitForByte(0x06);
+                
+                const percent = 30 + Math.floor((i / sectorsToErase) * 20);
+                updateProgress(percent);
+            }
+            
+            log('Flash erased, writing firmware...', 'info');
+            
+            // Write firmware
+            for (let i = 0; i < data.length; i += chunkSize) {
+                const chunk = data.slice(i, Math.min(i + chunkSize, data.length));
+                const addr = flashAddr + i;
+                
+                // CMD_FW (Flash Write)
+                const writeCmd = [
+                    0x57, // CMD_FW
+                    (addr >> 24) & 0xFF,
+                    (addr >> 16) & 0xFF,
+                    (addr >> 8) & 0xFF,
+                    addr & 0xFF,
+                    (chunk.length >> 8) & 0xFF,
+                    chunk.length & 0xFF
+                ];
+                
+                await writeBytes(writeCmd);
+                await waitForByte(0x06);
+                await writeBytes(chunk);
+                await waitForByte(0x06);
+                
+                const percent = 50 + Math.floor((i / data.length) * 50);
+                updateProgress(percent);
+            }
+            
+            log('✓ Firmware flashed successfully!', 'success');
+            updateProgress(100);
+        }
+
+        // Event handlers
+        connectBtn.addEventListener('click', async () => {
+            try {
+                if (!('serial' in navigator)) {
+                    log('ERROR: Web Serial API not supported. Use Chrome/Edge/Opera.', 'error');
+                    return;
+                }
+
+                log('Requesting serial port access...', 'info');
+                port = await navigator.serial.requestPort();
+                
+                await port.open({ 
+                    baudRate: 1500000,
+                    dataBits: 8,
+                    stopBits: 1,
+                    parity: 'none',
+                    flowControl: 'none'
+                });
+                
+                reader = port.readable.getReader();
+                writer = port.writable.getWriter();
+                
+                connected = true;
+                log('✓ Connected to BW16!', 'success');
+                
+                connectBtn.textContent = '✓ Connected';
+                connectBtn.disabled = true;
+                flashBtn.disabled = false;
+
+            } catch (error) {
+                log(`ERROR: ${error.message}`, 'error');
+            }
+        });
+
+        flashBtn.addEventListener('click', async () => {
+            if (!connected) {
+                log('ERROR: Not connected. Connect first.', 'error');
+                return;
+            }
+
+            flashBtn.disabled = true;
+            
+            try {
+                log('=== FLASHING STARTED ===', 'info');
+                
+                // Step 1: Enter flash mode
+                await enterFlashMode();
+                
+                // Step 2: Load flash stub
+                await loadFlashStub();
+                
+                // Step 3: Download firmware
+                log('Downloading firmware...', 'info');
+                const response = await fetch('km0_km4_image2.bin');
+                const firmware = await response.arrayBuffer();
+                
+                // Step 4: Flash firmware
+                await flashFirmware(firmware);
+                
+                log('=== FLASH COMPLETE ===', 'success');
+                log('You can now disconnect and wire BW16 to Flipper Zero!', 'info');
+                
+            } catch (error) {
+                log(`ERROR: ${error.message}`, 'error');
+                flashBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
