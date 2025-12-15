@@ -341,14 +341,22 @@
         }
 
         // Serial utilities
-        async function waitForByte(expected, timeout = 2000) {
+        async function waitForByte(expected, timeout = 5000) {
             const startTime = Date.now();
             while (Date.now() - startTime < timeout) {
-                const { value, done } = await reader.read();
-                if (done) throw new Error('Reader closed');
-                if (value && value.length > 0 && value[0] === expected) {
-                    return true;
+                try {
+                    const { value, done } = await reader.read();
+                    if (done) throw new Error('Reader closed');
+                    if (value && value.length > 0) {
+                        log(`Received: 0x${value[0].toString(16)}`, 'info');
+                        if (value[0] === expected) {
+                            return true;
+                        }
+                    }
+                } catch (error) {
+                    log(`Read error: ${error.message}`, 'warning');
                 }
+                await new Promise(resolve => setTimeout(resolve, 10));
             }
             throw new Error(`Timeout waiting for byte 0x${expected.toString(16)}`);
         }
@@ -396,11 +404,14 @@
                 size & 0xFF
             ];
             
+            log('Sending write memory command...', 'info');
             await writeBytes(cmd);
+            log('Waiting for ACK...', 'info');
             await waitForByte(0x06); // ACK
+            log('✓ ACK received, sending stub data...', 'success');
             
             // Send stub data in chunks
-            const chunkSize = 1024;
+            const chunkSize = 256;
             const data = new Uint8Array(stub);
             
             for (let i = 0; i < data.length; i += chunkSize) {
@@ -410,6 +421,10 @@
                 
                 const percent = Math.floor((i / data.length) * 30);
                 updateProgress(percent);
+                
+                if (i % 1024 === 0) {
+                    log(`Written ${i}/${data.length} bytes`, 'info');
+                }
             }
             
             log('Flash stub loaded successfully', 'success');
@@ -491,7 +506,7 @@
                 port = await navigator.serial.requestPort();
                 
                 await port.open({ 
-                    baudRate: 1500000,
+                    baudRate: 115200,
                     dataBits: 8,
                     stopBits: 1,
                     parity: 'none',
