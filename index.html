@@ -3,30 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🦇 BW16 Bootloader Debug</title>
+    <title>🦇 Vampire Deauther - BW16 Flasher</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Courier New', monospace;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0d1117;
             color: #c9d1d9;
-            padding: 20px;
+            line-height: 1.6;
         }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-        h1 {
-            color: #58a6ff;
-            margin-bottom: 20px;
-        }
-        .box {
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+        h1 { font-size: 2.5em; margin-bottom: 10px; color: #58a6ff; text-align: center; }
+        .subtitle { text-align: center; color: #8b949e; margin-bottom: 40px; }
+        .flasher-box {
             background: #161b22;
             border: 1px solid #30363d;
             border-radius: 6px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        .warning-box {
+            background: #1c1416;
+            border: 2px solid #f85149;
+            border-radius: 6px;
             padding: 20px;
+            margin-bottom: 20px;
+        }
+        .warning-box h3 { color: #f85149; margin-bottom: 10px; }
+        .steps {
+            background: #0d1117;
+            padding: 20px;
+            border-radius: 6px;
             margin: 20px 0;
         }
+        .step {
+            background: #161b22;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 3px solid #58a6ff;
+            border-radius: 3px;
+        }
+        .step strong { color: #58a6ff; font-size: 1.1em; }
         button {
             background: #238636;
             color: white;
@@ -35,186 +52,243 @@
             font-size: 16px;
             border-radius: 6px;
             cursor: pointer;
-            margin: 5px;
+            width: 100%;
+            margin: 10px 0;
+            transition: background 0.2s;
         }
         button:hover { background: #2ea043; }
-        button:disabled {
-            background: #21262d;
-            color: #484f58;
-            cursor: not-allowed;
-        }
-        #log {
+        button:disabled { background: #21262d; color: #484f58; cursor: not-allowed; }
+        #statusBox {
             background: #0d1117;
             border: 1px solid #30363d;
-            padding: 15px;
-            height: 400px;
-            overflow-y: auto;
-            font-size: 14px;
-            margin: 20px 0;
-        }
-        .byte {
-            display: inline-block;
-            background: #1f6feb;
-            color: white;
-            padding: 2px 6px;
-            margin: 2px;
-            border-radius: 3px;
-            font-family: 'Courier New', monospace;
-        }
-        .byte.c {
-            background: #3fb950;
-            font-weight: bold;
-        }
-        .instructions {
-            background: #1c1416;
-            border: 2px solid #f85149;
-            padding: 20px;
             border-radius: 6px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
             margin: 20px 0;
         }
-        .instructions h3 { color: #f85149; margin-bottom: 10px; }
-        .instructions ol {
-            margin-left: 20px;
-            line-height: 2;
+        #progressContainer { display: none; margin: 20px 0; }
+        #progressBar {
+            background: #238636;
+            height: 30px;
+            border-radius: 6px;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+            font-weight: bold;
+            transition: width 0.3s;
         }
-        .instructions li { color: #d29922; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🦇 BW16 Bootloader Byte Capture</h1>
-        
-        <div class="instructions">
-            <h3>📋 INSTRUCTIONS - Follow These Steps:</h3>
-            <ol>
-                <li><strong>Click "Connect BW16"</strong> and select your COM port</li>
-                <li><strong>Click "Start Listening"</strong> - monitor will start</li>
-                <li><strong>Press BURN button</strong> and HOLD it (5 seconds)</li>
-                <li><strong>Press RST button</strong> (while holding BURN) for 2 seconds</li>
-                <li><strong>Release RST</strong> - watch for characters (□□□) to appear below</li>
-                <li><strong>Release BURN</strong> once characters appear</li>
-                <li><strong>Copy the hex bytes</strong> that appear and send them to me!</li>
+        <h1>🦇 Vampire Deauther</h1>
+        <p class="subtitle">BW16 Web Flasher - Working Edition</p>
+
+        <div class="warning-box">
+            <h3>📋 Button Sequence Required</h3>
+            <p><strong>When you click "Flash Firmware", do this:</strong></p>
+            <ol style="margin-left: 20px; margin-top: 10px; line-height: 2;">
+                <li>Hold <strong>BURN</strong> button (5 seconds)</li>
+                <li>Press <strong>RST</strong> button (2 seconds, while holding BURN)</li>
+                <li>Release <strong>RST</strong> → Wait for "#Flash Download Start"</li>
+                <li>Release <strong>BURN</strong></li>
+                <li>Flasher will proceed automatically!</li>
             </ol>
         </div>
 
-        <div class="box">
-            <button id="connectBtn">Connect BW16</button>
-            <button id="listenBtn" disabled>Start Listening</button>
-            <button id="stopBtn" disabled>Stop Listening</button>
-            <button id="clearBtn">Clear Log</button>
-        </div>
-
-        <div id="log">
-            <div style="color: #58a6ff;">Waiting for connection...</div>
-        </div>
-
-        <div class="box">
-            <h3 style="color: #58a6ff; margin-bottom: 10px;">📊 Statistics</h3>
-            <div id="stats">
-                <div>Total bytes received: <span id="totalBytes" style="color: #3fb950;">0</span></div>
-                <div>Unique bytes: <span id="uniqueBytes" style="color: #3fb950;">0</span></div>
-                <div>Found 'C' (0x43): <span id="foundC" style="color: #f85149;">NO</span></div>
+        <div class="flasher-box">
+            <h2 style="margin-bottom: 20px;">📡 Web Flasher</h2>
+            
+            <div id="statusBox">
+                <div style="color: #58a6ff;">[INFO] Ready. Click "Connect BW16" to begin.</div>
             </div>
+
+            <div id="progressContainer">
+                <div id="progressBar" style="width: 0%">0%</div>
+            </div>
+
+            <button id="connectBtn">Connect BW16</button>
+            <button id="flashBtn" disabled>Flash Firmware</button>
         </div>
     </div>
 
-    <script>
-        let port, reader, writer;
-        let isListening = false;
-        let bytesReceived = new Set();
-        let totalBytesCount = 0;
-        let foundCByte = false;
+    <script type="module">
+        let port, reader, writer, connected = false;
+        let readBuffer = [];
 
         const connectBtn = document.getElementById('connectBtn');
-        const listenBtn = document.getElementById('listenBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const clearBtn = document.getElementById('clearBtn');
-        const logDiv = document.getElementById('log');
+        const flashBtn = document.getElementById('flashBtn');
+        const statusBox = document.getElementById('statusBox');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
 
         function log(msg, type = 'info') {
-            const colors = {
-                info: '#58a6ff',
-                success: '#3fb950',
-                error: '#f85149',
-                warning: '#d29922'
-            };
+            const colors = { info: '#58a6ff', success: '#3fb950', error: '#f85149', warning: '#d29922' };
             const div = document.createElement('div');
-            div.style.color = colors[type] || colors.info;
+            div.style.color = colors[type] || colors.info';
             div.style.margin = '4px 0';
-            div.innerHTML = msg;
-            logDiv.appendChild(div);
-            logDiv.scrollTop = logDiv.scrollHeight;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            statusBox.appendChild(div);
+            statusBox.scrollTop = statusBox.scrollHeight;
         }
 
-        function updateStats() {
-            document.getElementById('totalBytes').textContent = totalBytesCount;
-            document.getElementById('uniqueBytes').textContent = bytesReceived.size;
-            document.getElementById('foundC').textContent = foundCByte ? 'YES! ✓' : 'NO';
-            document.getElementById('foundC').style.color = foundCByte ? '#3fb950' : '#f85149';
+        function updateProgress(percent, text) {
+            progressContainer.style.display = 'block';
+            progressBar.style.width = `${percent}%`;
+            progressBar.textContent = text || `${percent}%`;
         }
 
-        function byteToHex(byte) {
-            return '0x' + byte.toString(16).padStart(2, '0').toUpperCase();
-        }
+        const SOH = 0x01, EOT = 0x04, ACK = 0x06, NAK = 0x15, C = 0x43;
 
-        function byteToChar(byte) {
-            if (byte >= 32 && byte <= 126) {
-                return String.fromCharCode(byte);
+        function crc16(data) {
+            let crc = 0;
+            for (let i = 0; i < data.length; i++) {
+                crc ^= data[i] << 8;
+                for (let j = 0; j < 8; j++) crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1;
             }
-            return '□';
+            return crc & 0xFFFF;
         }
 
-        async function startListening() {
-            isListening = true;
-            log('🎧 <strong>Listening started!</strong> Now do the button sequence...', 'success');
-            log('', 'info');
+        async function readByte(timeout = 3000) {
+            const start = Date.now();
+            while (Date.now() - start < timeout) {
+                if (readBuffer.length > 0) return readBuffer.shift();
+                try {
+                    const { value, done } = await Promise.race([
+                        reader.read(),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 50))
+                    ]);
+                    if (done) throw new Error('Serial closed');
+                    if (value) readBuffer.push(...value);
+                } catch (e) {
+                    if (e.message !== 'timeout') throw e;
+                }
+                await new Promise(r => setTimeout(r, 10));
+            }
+            throw new Error('Timeout');
+        }
 
-            try {
-                while (isListening) {
-                    const { value, done } = await reader.read();
+        async function waitForByte(expected, timeout = 3000) {
+            const byte = await readByte(timeout);
+            if (byte !== expected) {
+                throw new Error(`Expected 0x${expected.toString(16).padStart(2, '0')}, got 0x${byte.toString(16).padStart(2, '0')}`);
+            }
+        }
+
+        async function writeBytes(data) {
+            await writer.write(new Uint8Array(data));
+        }
+
+        // NEW: Wait for bootloader NAKs and respond with C
+        async function waitForBootloader() {
+            log('Waiting for "#Flash Download Start" message...', 'info');
+            
+            let nakCount = 0;
+            let message = '';
+            const start = Date.now();
+            
+            while (Date.now() - start < 30000) { // 30 second timeout
+                if (readBuffer.length > 0) {
+                    const byte = readBuffer.shift();
                     
-                    if (done) {
-                        log('Connection closed', 'error');
-                        break;
+                    // Build message from printable chars
+                    if (byte >= 32 && byte <= 126) {
+                        message += String.fromCharCode(byte);
                     }
-
-                    if (value && value.length > 0) {
-                        let byteString = '';
+                    
+                    // Check for "Flash Download Start"
+                    if (message.includes('Flash Download Start')) {
+                        log('✓ Got bootloader message!', 'success');
+                        log('Bootloader is ready, responding with C...', 'info');
                         
-                        for (let byte of value) {
-                            totalBytesCount++;
-                            bytesReceived.add(byte);
-                            
-                            const hex = byteToHex(byte);
-                            const char = byteToChar(byte);
-                            const className = (byte === 0x43) ? 'byte c' : 'byte';
-                            
-                            if (byte === 0x43) {
-                                foundCByte = true;
-                                byteString += `<span class="${className}" title="This is 'C'!">${hex} ('${char}')</span>`;
-                            } else {
-                                byteString += `<span class="${className}">${hex} ('${char}')</span>`;
-                            }
+                        // Clear any remaining NAKs
+                        await new Promise(r => setTimeout(r, 100));
+                        readBuffer = [];
+                        
+                        // Send C to request XMODEM-CRC mode
+                        await writeBytes([C]);
+                        log('✓ Sent C (XMODEM-CRC mode request)', 'success');
+                        
+                        return true;
+                    }
+                    
+                    // Count NAKs
+                    if (byte === NAK) {
+                        nakCount++;
+                        if (nakCount % 20 === 0) {
+                            log(`Received ${nakCount} NAKs... (still waiting for bootloader message)`, 'warning');
                         }
-                        
-                        const timestamp = new Date().toLocaleTimeString();
-                        log(`[${timestamp}] ${byteString}`, 'info');
-                        updateStats();
                     }
                 }
-            } catch (error) {
-                log(`Error: ${error.message}`, 'error');
+                
+                await new Promise(r => setTimeout(r, 10));
             }
+            
+            throw new Error('Bootloader not responding - did you press BURN+RST?');
+        }
+
+        async function xmodemSendFile(data, name) {
+            log(`Starting XMODEM transfer of ${name}...`, 'info');
+            
+            const totalPackets = Math.ceil(data.length / 128);
+            log(`Sending ${totalPackets} packets...`, 'info');
+            
+            for (let i = 0; i < totalPackets; i++) {
+                const packetNum = (i + 1) % 256;
+                const start = i * 128;
+                const chunk = new Uint8Array(128);
+                
+                for (let j = 0; j < 128; j++) {
+                    chunk[j] = (start + j < data.length) ? data[start + j] : 0x1A;
+                }
+                
+                const packet = new Uint8Array(133);
+                packet[0] = SOH;
+                packet[1] = packetNum;
+                packet[2] = 0xFF - packetNum;
+                packet.set(chunk, 3);
+                
+                const crc = crc16(chunk);
+                packet[131] = (crc >> 8) & 0xFF;
+                packet[132] = crc & 0xFF;
+                
+                let sent = false;
+                for (let retry = 0; retry < 10; retry++) {
+                    try {
+                        await writeBytes(packet);
+                        await waitForByte(ACK, 2000);
+                        sent = true;
+                        break;
+                    } catch (e) {
+                        if (retry < 9) log(`Packet ${i + 1} retry ${retry + 1}`, 'warning');
+                    }
+                }
+                
+                if (!sent) throw new Error(`Failed to send packet ${i + 1}`);
+                
+                const percent = Math.floor(((i + 1) / totalPackets) * 100);
+                if ((i + 1) % 5 === 0 || i === totalPackets - 1) {
+                    updateProgress(percent, `${i + 1}/${totalPackets} packets`);
+                }
+            }
+            
+            log('Finalizing transfer...', 'info');
+            await writeBytes([EOT]);
+            await waitForByte(ACK, 2000);
+            log(`✓ ${name} transferred!`, 'success');
         }
 
         connectBtn.addEventListener('click', async () => {
             try {
                 if (!('serial' in navigator)) {
-                    log('❌ Web Serial API not supported. Use Chrome/Edge/Opera.', 'error');
+                    log('ERROR: Web Serial API not supported', 'error');
                     return;
                 }
 
-                log('🔌 Opening serial port selector...', 'info');
+                log('Select BW16 serial port...', 'info');
                 port = await navigator.serial.requestPort();
                 
                 await port.open({
@@ -224,42 +298,79 @@
                     parity: 'none',
                     flowControl: 'none'
                 });
-
+                
                 reader = port.readable.getReader();
                 writer = port.writable.getWriter();
-
-                log('✅ Connected to BW16!', 'success');
-                log('Baudrate: 115200 bps', 'info');
-                log('', 'info');
-
-                connectBtn.disabled = true;
+                
+                connected = true;
+                log('✓ Connected to BW16', 'success');
+                
                 connectBtn.textContent = '✓ Connected';
-                listenBtn.disabled = false;
+                connectBtn.disabled = true;
+                flashBtn.disabled = false;
 
             } catch (error) {
-                log(`❌ Connection error: ${error.message}`, 'error');
+                log(`Connection error: ${error.message}`, 'error');
             }
         });
 
-        listenBtn.addEventListener('click', () => {
-            listenBtn.disabled = true;
-            stopBtn.disabled = false;
-            startListening();
-        });
+        flashBtn.addEventListener('click', async () => {
+            if (!connected) return;
 
-        stopBtn.addEventListener('click', () => {
-            isListening = false;
-            listenBtn.disabled = false;
-            stopBtn.disabled = true;
-            log('🛑 Listening stopped', 'warning');
-        });
-
-        clearBtn.addEventListener('click', () => {
-            logDiv.innerHTML = '<div style="color: #58a6ff;">Log cleared. Ready for new capture.</div>';
-            bytesReceived.clear();
-            totalBytesCount = 0;
-            foundCByte = false;
-            updateStats();
+            flashBtn.disabled = true;
+            updateProgress(0, 'Starting...');
+            
+            try {
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                log('🦇 VAMPIRE DEAUTHER FLASH', 'info');
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                log('', 'warning');
+                log('⚠️ DO THIS NOW:', 'warning');
+                log('1. Hold BURN (5 sec)', 'warning');
+                log('2. Press RST (2 sec, while holding BURN)', 'warning');
+                log('3. Release RST, then release BURN', 'warning');
+                log('', 'info');
+                
+                updateProgress(5, 'Waiting for bootloader...');
+                await waitForBootloader();
+                
+                updateProgress(10, 'Loading flash stub...');
+                const stubResp = await fetch('imgtool_flashloader_amebad.bin');
+                if (!stubResp.ok) throw new Error('Flash stub not found');
+                const stubData = new Uint8Array(await stubResp.arrayBuffer());
+                
+                log(`Flash stub: ${stubData.length} bytes`, 'info');
+                await xmodemSendFile(stubData, 'Flash Stub');
+                
+                updateProgress(40, 'Flash stub loaded');
+                await new Promise(r => setTimeout(r, 500));
+                
+                // Bootloader should send NAKs again, respond with C
+                log('Activating flash stub...', 'info');
+                await waitForBootloader();
+                
+                updateProgress(45, 'Loading firmware...');
+                const fwResp = await fetch('km0_km4_image2.bin');
+                if (!fwResp.ok) throw new Error('Firmware not found');
+                const fwData = new Uint8Array(await fwResp.arrayBuffer());
+                
+                log(`Firmware: ${fwData.length} bytes (~60s)`, 'info');
+                await xmodemSendFile(fwData, 'Firmware');
+                
+                updateProgress(100, '✓ Complete!');
+                
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'success');
+                log('✓ FLASH COMPLETE!', 'success');
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'success');
+                
+            } catch (error) {
+                log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'error');
+                log(`✗ FLASH FAILED: ${error.message}`, 'error');
+                log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'error');
+                
+                flashBtn.disabled = false;
+                updateProgress(0, 'Failed');
+            }
         });
     </script>
 </body>
