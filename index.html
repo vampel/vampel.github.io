@@ -3,491 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vampire Deauther - Flipper Zero WiFi Tool</title>
+    <title>🦇 Vampire Deauther - BW16 Web Flasher</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: #0d1117;
             color: #c9d1d9;
             line-height: 1.6;
         }
-        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
-        header {
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #58a6ff;
             text-align: center;
-            padding: 50px 20px;
-            border-bottom: 1px solid #30363d;
         }
-        h1 { 
-            font-size: 3rem; 
-            color: #58a6ff; 
-            margin-bottom: 15px;
-            font-weight: 700;
+        .subtitle {
+            text-align: center;
+            color: #8b949e;
+            margin-bottom: 40px;
         }
-        .subtitle { 
-            font-size: 1.3rem; 
-            color: #8b949e; 
-            margin-bottom: 20px;
-        }
-        .hero-section {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin: 40px 0;
-        }
-        .download-card {
+        .flasher-box {
             background: #161b22;
-            border: 2px solid #30363d;
-            border-radius: 8px;
+            border: 1px solid #30363d;
+            border-radius: 6px;
             padding: 30px;
-            text-align: center;
-            transition: all 0.3s;
-        }
-        .download-card:hover {
-            border-color: #58a6ff;
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(88, 166, 255, 0.2);
-        }
-        .download-card h3 {
-            color: #58a6ff;
-            font-size: 1.5rem;
-            margin-bottom: 15px;
-        }
-        .download-card p {
-            color: #8b949e;
-            margin-bottom: 20px;
-            font-size: 0.95rem;
-        }
-        .download-card .size {
-            color: #6e7681;
-            font-size: 0.85rem;
-            margin-top: 10px;
-        }
-        .btn {
-            display: inline-block;
-            padding: 14px 28px;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s;
-            border: none;
-            cursor: pointer;
-        }
-        .btn-primary {
-            background: #238636;
-            color: white;
-        }
-        .btn-primary:hover {
-            background: #2ea043;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(35, 134, 54, 0.4);
-        }
-        .btn-secondary {
-            background: #21262d;
-            color: #c9d1d9;
-            border: 1px solid #30363d;
-        }
-        .btn-secondary:hover {
-            background: #30363d;
-            border-color: #58a6ff;
-        }
-        .section {
-            padding: 50px 20px;
-            border-bottom: 1px solid #30363d;
-        }
-        .section h2 {
-            font-size: 2.2rem;
-            color: #58a6ff;
             margin-bottom: 30px;
-            text-align: center;
         }
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            margin-top: 30px;
-        }
-        .feature {
-            display: flex;
-            align-items: start;
-            gap: 15px;
-            padding: 20px;
-            background: #161b22;
-            border: 1px solid #30363d;
+        .warning-box {
+            background: #1c1416;
+            border: 2px solid #f85149;
             border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
         }
-        .feature-icon {
-            font-size: 2rem;
-            min-width: 40px;
-        }
-        .feature h4 {
-            color: #c9d1d9;
-            margin-bottom: 8px;
-        }
-        .feature p {
-            color: #8b949e;
-            font-size: 0.9rem;
+        .warning-box h3 {
+            color: #f85149;
+            margin-bottom: 10px;
         }
         .steps {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 30px;
+            background: #0d1117;
+            padding: 20px;
+            border-radius: 6px;
             margin: 20px 0;
         }
         .step {
-            padding: 20px;
-            margin: 15px 0;
-            background: #0d1117;
-            border-left: 4px solid #58a6ff;
-            border-radius: 4px;
-        }
-        .step-number {
-            display: inline-block;
-            width: 35px;
-            height: 35px;
-            background: #58a6ff;
-            color: white;
-            border-radius: 50%;
-            text-align: center;
-            line-height: 35px;
-            font-weight: bold;
-            margin-right: 12px;
-            font-size: 1.1rem;
-        }
-        .wiring-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
             background: #161b22;
-            border-radius: 6px;
-            overflow: hidden;
-        }
-        .wiring-table th,
-        .wiring-table td {
             padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid #30363d;
+            margin: 10px 0;
+            border-left: 3px solid #58a6ff;
+            border-radius: 3px;
         }
-        .wiring-table th {
+        .step strong {
+            color: #58a6ff;
+            font-size: 1.1em;
+        }
+        button {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: background 0.2s;
+        }
+        button:hover { background: #2ea043; }
+        button:disabled {
+            background: #21262d;
+            color: #484f58;
+            cursor: not-allowed;
+        }
+        #statusBox {
             background: #0d1117;
-            color: #58a6ff;
-            font-weight: 600;
-        }
-        .wiring-table tr:hover {
-            background: #1c2128;
-        }
-        code {
-            background: #161b22;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-family: 'Monaco', 'Courier New', monospace;
-            font-size: 0.9em;
-            color: #ff7b72;
             border: 1px solid #30363d;
-        }
-        .warning-box {
-            background: #2d2a1f;
-            border-left: 4px solid #d29922;
-            padding: 20px;
-            margin: 20px 0;
             border-radius: 6px;
-        }
-        .info-box {
-            background: #1f2937;
-            border-left: 4px solid #58a6ff;
-            padding: 20px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
             margin: 20px 0;
-            border-radius: 6px;
         }
-        footer {
+        #progressContainer {
+            display: none;
+            margin: 20px 0;
+        }
+        #progressBar {
+            background: #238636;
+            height: 30px;
+            border-radius: 6px;
             text-align: center;
-            padding: 40px 20px;
-            color: #8b949e;
+            line-height: 30px;
+            color: white;
+            font-weight: bold;
+            transition: width 0.3s;
         }
-        footer a {
-            color: #58a6ff;
+        .download-link {
+            display: inline-block;
+            background: #58a6ff;
+            color: #0d1117;
+            padding: 10px 20px;
+            border-radius: 6px;
             text-decoration: none;
+            margin: 10px 5px;
+            font-weight: bold;
         }
-        footer a:hover {
-            text-decoration: underline;
-        }
-        @media (max-width: 768px) {
-            h1 { font-size: 2rem; }
-            .hero-section { grid-template-columns: 1fr; }
-        }
+        .download-link:hover { background: #79c0ff; }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>🦇 Vampire Deauther</h1>
-            <p class="subtitle">WiFi Deauther & Beacon Spammer for Flipper Zero</p>
-        </header>
+        <h1>🦇 Vampire Deauther</h1>
+        <p class="subtitle">BW16 Web Flasher - Type-C Edition</p>
 
-        <!-- Downloads Section -->
-        <div class="hero-section">
-            <div class="download-card">
-                <h3>📦 Flipper App</h3>
-                <p>Install on your Flipper Zero to control the BW16 module</p>
-                <a href="vampire_deauther.fap" download class="btn btn-primary">
-                    Download FAP
-                </a>
-                <div class="size">~50 KB</div>
+        <div class="warning-box">
+            <h3>⚠️ IMPORTANT: Manual Bootloader Required</h3>
+            <p>The BW16 Type-C requires manual button presses to enter bootloader mode. Web Serial API cannot automate this process.</p>
+            <br>
+            <p><strong>You MUST follow the button sequence below when prompted!</strong></p>
+        </div>
+
+        <div class="flasher-box">
+            <h2 style="margin-bottom: 20px;">📡 Web Flasher</h2>
+            
+            <div id="statusBox">
+                <div style="color: #58a6ff;">[INFO] Ready to flash. Click "Connect BW16" to begin.</div>
             </div>
 
-            <div class="download-card">
-                <h3>⚙️ BW16 Firmware</h3>
-                <p>Flash this firmware onto your BW16 (RTL8720DN) module</p>
-                <a href="km0_km4_image2.bin" download class="btn btn-primary">
-                    Download BIN
-                </a>
-                <div class="size">~450 KB</div>
+            <div id="progressContainer">
+                <div id="progressBar" style="width: 0%">0%</div>
             </div>
 
-            <div class="download-card">
-                <h3>📖 Source Code</h3>
-                <p>View the full project on GitHub</p>
-                <a href="https://github.com/vampel/Vampire-Deauther" class="btn btn-secondary">
-                    View on GitHub
-                </a>
+            <button id="connectBtn">Connect BW16</button>
+            <button id="flashBtn" disabled>Flash Firmware</button>
+
+            <div class="steps">
+                <h3 style="color: #58a6ff; margin-bottom: 15px;">Button Sequence (Do this when app prompts you):</h3>
+                <div class="step">
+                    <strong>Step 1:</strong> Hold down the <strong>BURN</strong> button on your BW16
+                </div>
+                <div class="step">
+                    <strong>Step 2:</strong> While holding BURN, press and release the <strong>RST</strong> button
+                </div>
+                <div class="step">
+                    <strong>Step 3:</strong> Release the <strong>BURN</strong> button
+                </div>
+                <div class="step">
+                    <strong>Step 4:</strong> BW16 is now in bootloader mode - web flasher will proceed automatically
+                </div>
             </div>
         </div>
 
-        <!-- Features -->
-        <section class="section">
-            <h2>✨ Features</h2>
-            <div class="features">
-                <div class="feature">
-                    <div class="feature-icon">📡</div>
-                    <div>
-                        <h4>WiFi Scanning</h4>
-                        <p>Detect nearby networks with channel and RSSI info</p>
-                    </div>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">🎯</div>
-                    <div>
-                        <h4>Deauth Attacks</h4>
-                        <p>Target specific networks or all at once</p>
-                    </div>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">📢</div>
-                    <div>
-                        <h4>Beacon Spam</h4>
-                        <p>Create 50 fake APs with custom names</p>
-                    </div>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">⌨️</div>
-                    <div>
-                        <h4>Custom SSID Editor</h4>
-                        <p>Virtual keyboard for beacon names</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Web Flasher (Experimental) -->
-        <section class="section">
-            <h2>⚡ Web Flasher (Experimental)</h2>
-            
-            <div class="warning-box">
-                <strong>⚠️ Experimental Feature:</strong><br>
-                Web-based flashing uses XMODEM protocol which may be unreliable via Web Serial API. 
-                If it fails, use Arduino IDE method below. Requires Chrome/Edge/Opera browser.
-            </div>
-
-            <div class="steps">
-                <div class="step">
-                    <span class="step-number">1</span>
-                    <strong>Prepare BW16</strong><br>
-                    • Connect BW16 to LOG UART (PA7/PA8), NOT AT UART (PB1/PB2)<br>
-                    • Enter bootloader: Hold <strong>BURN</strong> → Press <strong>RST</strong> → Release both
-                </div>
-
-                <div class="step">
-                    <span class="step-number">2</span>
-                    <strong>Connect and Flash</strong><br>
-                    <button id="connectBtn" class="btn btn-primary" style="margin: 10px 0;">
-                        🔌 Connect BW16
-                    </button>
-                    <button id="flashBtn" class="btn btn-secondary" style="margin: 10px 0;" disabled>
-                        ⚡ Flash Firmware
-                    </button>
-                </div>
-
-                <div class="step">
-                    <span class="step-number">3</span>
-                    <strong>Monitor Progress</strong><br>
-                    <div id="progressContainer" style="width: 100%; height: 30px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; overflow: hidden; margin: 15px 0; display: none;">
-                        <div id="progressBar" style="height: 100%; background: linear-gradient(90deg, #238636, #2ea043); width: 0%; transition: width 0.3s; display: flex; align-items: center; justify-content: center; color: white; font-weight: 500;">0%</div>
-                    </div>
-                    <div id="statusBox" style="background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 20px; margin: 15px 0; font-family: 'Courier New', monospace; font-size: 13px; max-height: 300px; overflow-y: auto;">
-                        <div style="color: #8b949e;">[INFO] Ready to flash. Click "Connect BW16" to begin.</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="info-box">
-                <strong>💡 Troubleshooting:</strong><br>
-                • If connection fails: Check you're using LOG UART, not AT UART<br>
-                • If flash fails: Use Arduino IDE method below (100% reliable)<br>
-                • Supported browsers: Chrome, Edge, Opera (Web Serial API required)
-            </div>
-        </section>
-
-        <!-- Flash Instructions -->
-        <section class="section">
-            <h2>⚡ Flash BW16 Firmware</h2>
-            
-            <div class="info-box">
-                <strong>📋 What you need:</strong><br>
-                • BW16 (RTL8720DN) module<br>
-                • USB cable<br>
-                • Arduino IDE<br>
-                • Downloaded <code>km0_km4_image2.bin</code>
-            </div>
-
-            <div class="steps">
-                <div class="step">
-                    <span class="step-number">1</span>
-                    <strong>Install Arduino IDE</strong><br>
-                    Download from <a href="https://www.arduino.cc/en/software" style="color: #58a6ff;">arduino.cc/en/software</a>
-                </div>
-
-                <div class="step">
-                    <span class="step-number">2</span>
-                    <strong>Add RTL8720DN Board Support</strong><br>
-                    • Open Arduino IDE → File → Preferences<br>
-                    • Add to "Additional Boards Manager URLs":<br>
-                    <code style="display: block; margin: 10px 0; padding: 10px;">https://github.com/ambiot/ambd_arduino/raw/master/Arduino_package/package_realtek.com_amebad_index.json</code>
-                    • Tools → Board → Boards Manager<br>
-                    • Search "Realtek Ameba" and click Install
-                </div>
-
-                <div class="step">
-                    <span class="step-number">3</span>
-                    <strong>Prepare BW16</strong><br>
-                    • Connect BW16 to computer via USB<br>
-                    • <strong>For rtlduino boards:</strong> Short these pins:<br>
-                    &nbsp;&nbsp;• D0 ↔ D4 (PA7 ↔ PB1)<br>
-                    &nbsp;&nbsp;• D1 ↔ D5 (PA8 ↔ PB2)
-                </div>
-
-                <div class="step">
-                    <span class="step-number">4</span>
-                    <strong>Enter Bootloader Mode</strong><br>
-                    • Hold <strong>BURN</strong> button<br>
-                    • Press and release <strong>RST</strong> button<br>
-                    • Release <strong>BURN</strong> button
-                </div>
-
-                <div class="step">
-                    <span class="step-number">5</span>
-                    <strong>Flash with Image Tool</strong><br>
-                    Open terminal/command prompt and run:<br><br>
-                    <strong>Windows:</strong>
-                    <code style="display: block; margin: 5px 0; padding: 10px;">C:\Users\YourUser\AppData\Local\Arduino15\packages\realtek\tools\ameba_d_tools\1.0.5\windows\image_tool\amebad_image_tool.exe COM3</code>
-                    
-                    <strong>Mac:</strong>
-                    <code style="display: block; margin: 5px 0; padding: 10px;">~/Library/Arduino15/packages/realtek/tools/ameba_d_tools/1.0.5/tools/macos/image_tool/amebad_image_tool /dev/cu.usbserial-*</code>
-                    
-                    <strong>Linux:</strong>
-                    <code style="display: block; margin: 5px 0; padding: 10px;">~/.arduino15/packages/realtek/tools/ameba_d_tools/1.0.5/linux/image_tool/amebad_image_tool /dev/ttyUSB0</code>
-                    
-                    <br>Tool will guide you through flashing <code>km0_km4_image2.bin</code>
-                </div>
-            </div>
-        </section>
-
-        <!-- Hardware Setup -->
-        <section class="section">
-            <h2>🔧 Connect to Flipper Zero</h2>
-            
-            <div class="warning-box">
-                <strong>⚠️ Important:</strong> Power off Flipper before connecting wires!
-            </div>
-
-            <table class="wiring-table">
-                <thead>
-                    <tr>
-                        <th>BW16 Pin</th>
-                        <th>Flipper Zero Pin</th>
-                        <th>Function</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><code>TX (PA7)</code></td>
-                        <td><code>Pin 14 (RX)</code></td>
-                        <td>UART Transmit</td>
-                    </tr>
-                    <tr>
-                        <td><code>RX (PA8)</code></td>
-                        <td><code>Pin 13 (TX)</code></td>
-                        <td>UART Receive</td>
-                    </tr>
-                    <tr>
-                        <td><code>3V3</code></td>
-                        <td><code>Pin 9 (3.3V)</code></td>
-                        <td>Power</td>
-                    </tr>
-                    <tr>
-                        <td><code>GND</code></td>
-                        <td><code>Pin 18 (GND)</code></td>
-                        <td>Ground</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <div class="steps">
-                <div class="step">
-                    <span class="step-number">1</span>
-                    <strong>Wire the modules</strong> following the table above
-                </div>
-
-                <div class="step">
-                    <span class="step-number">2</span>
-                    <strong>Install FAP on Flipper</strong><br>
-                    • Connect Flipper to PC<br>
-                    • Copy <code>vampire_deauther.fap</code> to <code>/ext/apps/GPIO/</code><br>
-                    • Disconnect and restart Flipper
-                </div>
-
-                <div class="step">
-                    <span class="step-number">3</span>
-                    <strong>Launch the app</strong><br>
-                    • Navigate to <strong>GPIO → Vampire Deauther</strong><br>
-                    • Enjoy! 🦇
-                </div>
-            </div>
-        </section>
-
-        <!-- Legal -->
-        <section class="section">
-            <h2>⚖️ Legal Notice</h2>
-            <div class="warning-box">
-                <p style="font-size: 1.1rem; margin-bottom: 10px;"><strong>⚠️ FOR EDUCATIONAL PURPOSES ONLY</strong></p>
-                <p>This tool is intended for educational purposes and authorized security testing only. Unauthorized access to computer networks is illegal in most jurisdictions. Users are solely responsible for ensuring they have proper authorization before testing any networks. Use this tool only on networks you own or have explicit written permission to test.</p>
-            </div>
-        </section>
-
-        <footer>
-            <p style="font-size: 1.1rem; margin-bottom: 15px;">
-                Made with 🦇 by <a href="https://github.com/vampel">Vampel</a>
-            </p>
-            <p>
-                <a href="https://github.com/vampel/Vampire-Deauther">GitHub</a> • 
-                <a href="https://github.com/vampel/Vampire-Deauther/issues">Report Issues</a> •
-                <a href="https://github.com/vampel/Vampire-Deauther/blob/main/LICENSE">License</a>
-            </p>
-        </footer>
+        <div class="flasher-box">
+            <h2>📥 Alternative: Download Files</h2>
+            <p>If web flasher doesn't work, use Arduino IDE method:</p>
+            <br>
+            <a href="vampire_deauther.fap" download class="download-link">Download FAP</a>
+            <a href="km0_km4_image2.bin" download class="download-link">Download BIN</a>
+            <br><br>
+            <p>See <a href="https://github.com/vampel/Vampire-Deauther" style="color: #58a6ff;">GitHub README</a> for Arduino IDE instructions</p>
+        </div>
     </div>
+
     <script type="module">
-        // RTL8720DN Web Flasher - BW16 Type-C Auto Upload Mode
         let port, reader, writer, connected = false;
         let readBuffer = [];
 
@@ -554,46 +240,6 @@
             await writer.write(new Uint8Array(data));
         }
 
-        async function drainSerial() {
-            readBuffer = [];
-            await new Promise(r => setTimeout(r, 100));
-            try {
-                while (true) await readByte(50);
-            } catch (e) {}
-        }
-
-        // BW16 Type-C Auto Upload Mode sequence
-        async function autoUploadMode() {
-            log('Activating Auto Upload Mode...', 'info');
-            
-            // Clear buffers
-            await drainSerial();
-            
-            // Auto Upload Circuit sequence (mimics Arduino IDE)
-            // This toggles the auto-upload circuit on BW16 Type-C
-            
-            // Step 1: Set both low
-            await port.setSignals({ dataTerminalReady: false, requestToSend: false });
-            await new Promise(r => setTimeout(r, 50));
-            
-            // Step 2: DTR low, RTS high (Enter bootloader)
-            await port.setSignals({ dataTerminalReady: false, requestToSend: true });
-            await new Promise(r => setTimeout(r, 50));
-            
-            // Step 3: Release RTS, keep DTR low
-            await port.setSignals({ dataTerminalReady: false, requestToSend: false });
-            await new Promise(r => setTimeout(r, 50));
-            
-            // Step 4: Release DTR (chip is now in bootloader)
-            await port.setSignals({ dataTerminalReady: true, requestToSend: false });
-            await new Promise(r => setTimeout(r, 200));
-            
-            // Clear any junk
-            await drainSerial();
-            
-            log('✓ Auto Upload Mode active', 'success');
-        }
-
         async function waitForC() {
             log('Waiting for bootloader C...', 'info');
             
@@ -610,13 +256,12 @@
                     log(`RX: 0x${byte.toString(16).padStart(2, '0')}`, 'warning');
                 }
                 
-                // Send NAK periodically to wake bootloader
                 if (attempts % 10 === 0 && attempts > 0) {
                     await writeBytes([NAK]);
                     log(`Attempt ${attempts}... sending NAK`, 'warning');
                 }
                 
-                await new Promise(r => setTimeout(r, 100));
+                await new Promise(r => setTimeout(r), 100);
                 attempts++;
             }
             
@@ -717,14 +362,19 @@
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
                 log('🦇 VAMPIRE DEAUTHER FLASH', 'info');
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                log('', 'warning');
+                log('⚠️  ACTION REQUIRED - DO THIS NOW:', 'warning');
+                log('1. Hold BURN button', 'warning');
+                log('2. Press RST (while holding BURN)', 'warning');
+                log('3. Release both buttons', 'warning');
+                log('', 'warning');
+                log('Waiting 5 seconds for you to press buttons...', 'warning');
                 
-                // BW16 Type-C Auto Upload Mode
-                updateProgress(5, 'Auto Upload Mode...');
-                await autoUploadMode();
+                await new Promise(r => setTimeout(r, 5000));
                 
-                updateProgress(8, 'Waiting for bootloader...');
+                updateProgress(5, 'Checking bootloader...');
                 if (!await waitForC()) {
-                    throw new Error('Bootloader not responding - try pressing BURN+RST manually');
+                    throw new Error('Bootloader not responding - did you press BURN+RST?');
                 }
                 
                 updateProgress(10, 'Loading flash stub...');
@@ -738,9 +388,8 @@
                 updateProgress(40, 'Flash stub loaded');
                 await new Promise(r => setTimeout(r, 500));
                 
-                // Wait for C again
                 if (!await waitForC()) {
-                    log('Flash stub may be active, continuing...', 'warning');
+                    log('Continuing without second C...', 'warning');
                 }
                 
                 updateProgress(45, 'Loading firmware...');
@@ -748,7 +397,7 @@
                 if (!fwResp.ok) throw new Error('Firmware not found');
                 const fwData = new Uint8Array(await fwResp.arrayBuffer());
                 
-                log(`Firmware: ${fwData.length} bytes`, 'info');
+                log(`Firmware: ${fwData.length} bytes (~60s)`, 'info');
                 await xmodemSendFile(fwData, 'Firmware');
                 
                 updateProgress(100, '✓ Complete!');
@@ -762,10 +411,8 @@
                 log(`✗ FLASH FAILED: ${error.message}`, 'error');
                 log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'error');
                 log('', 'warning');
-                log('Try:', 'warning');
-                log('• Manually: Hold BURN, press RST, release both', 'warning');
-                log('• Unplug and reconnect BW16', 'warning');
-                log('• Use Arduino IDE method (100% reliable)', 'warning');
+                log('Did you press the buttons as instructed?', 'warning');
+                log('Try again and press BURN+RST when prompted', 'warning');
                 
                 flashBtn.disabled = false;
                 updateProgress(0, 'Failed');
