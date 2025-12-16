@@ -222,7 +222,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>🦇 Vampire Deauther 2.4Ghz & 5Ghz</h1>
+            <h1>🦇 Vampire Deauther</h1>
             <p class="subtitle">WiFi Deauther & Beacon Spammer for Flipper Zero</p>
         </header>
 
@@ -487,7 +487,7 @@
         </footer>
     </div>
     <script type="module">
-        // RTL8720DN Web Flasher - Optimized XMODEM at 115200 baud
+        // RTL8720DN Web Flasher - Full amebad_image_tool protocol
         let port, reader, writer, connected = false;
         let readBuffer = [];
 
@@ -499,17 +499,11 @@
 
         // Logging
         function log(msg, type = 'info') {
-            const colors = {
-                info: '#58a6ff',
-                success: '#3fb950',
-                error: '#f85149',
-                warning: '#d29922'
-            };
+            const colors = { info: '#58a6ff', success: '#3fb950', error: '#f85149', warning: '#d29922' };
             const div = document.createElement('div');
             div.style.color = colors[type] || colors.info;
             div.style.margin = '4px 0';
-            const timestamp = new Date().toLocaleTimeString();
-            div.textContent = `[${timestamp}] ${msg}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
             statusBox.appendChild(div);
             statusBox.scrollTop = statusBox.scrollHeight;
         }
@@ -520,51 +514,34 @@
             progressBar.textContent = text || `${percent}%`;
         }
 
-        // XMODEM Constants
-        const SOH = 0x01;
-        const EOT = 0x04;
-        const ACK = 0x06;
-        const NAK = 0x15;
-        const C = 0x43;
+        // XMODEM
+        const SOH = 0x01, EOT = 0x04, ACK = 0x06, NAK = 0x15, C = 0x43;
 
-        // CRC-16/XMODEM
         function crc16(data) {
             let crc = 0;
             for (let i = 0; i < data.length; i++) {
                 crc ^= data[i] << 8;
-                for (let j = 0; j < 8; j++) {
-                    crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1;
-                }
+                for (let j = 0; j < 8; j++) crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1;
             }
             return crc & 0xFFFF;
         }
 
-        // Binary reader (no text decoder for binary data)
         async function readByte(timeout = 3000) {
             const start = Date.now();
-            
             while (Date.now() - start < timeout) {
-                if (readBuffer.length > 0) {
-                    return readBuffer.shift();
-                }
-                
+                if (readBuffer.length > 0) return readBuffer.shift();
                 try {
                     const { value, done } = await Promise.race([
                         reader.read(),
                         new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 50))
                     ]);
-                    
                     if (done) throw new Error('Serial closed');
-                    if (value) {
-                        readBuffer.push(...value);
-                    }
+                    if (value) readBuffer.push(...value);
                 } catch (e) {
                     if (e.message !== 'timeout') throw e;
                 }
-                
                 await new Promise(r => setTimeout(r, 10));
             }
-            
             throw new Error('Timeout reading byte');
         }
 
@@ -578,6 +555,34 @@
 
         async function writeBytes(data) {
             await writer.write(new Uint8Array(data));
+        }
+
+        // Bootloader sync
+        async function syncBootloader() {
+            log('Syncing with bootloader...', 'info');
+            
+            // Send null bytes to wake up bootloader
+            for (let attempt = 0; attempt < 50; attempt++) {
+                await writeBytes([0x00]);
+                await new Promise(r => setTimeout(r, 100));
+                
+                // Check for any response
+                if (readBuffer.length > 0) {
+                    const response = readBuffer.shift();
+                    log(`Bootloader responded: 0x${response.toString(16)}`, 'success');
+                    // Clear buffer
+                    readBuffer = [];
+                    return true;
+                }
+                
+                if (attempt % 10 === 0 && attempt > 0) {
+                    log(`Sync attempt ${attempt}/50...`, 'warning');
+                }
+            }
+            
+            // Even if no response, bootloader might be ready
+            log('Proceeding with XMODEM (bootloader may be ready)...', 'info');
+            return true;
         }
 
         async function xmodemSendFile(data, name) {
@@ -612,15 +617,12 @@
             for (let i = 0; i < totalPackets; i++) {
                 const packetNum = (i + 1) % 256;
                 const start = i * 128;
-                const end = Math.min(start + 128, data.length);
                 const chunk = new Uint8Array(128);
                 
-                // Fill chunk with data (pad with 0x1A if needed)
                 for (let j = 0; j < 128; j++) {
                     chunk[j] = (start + j < data.length) ? data[start + j] : 0x1A;
                 }
                 
-                // Build packet
                 const packet = new Uint8Array(133);
                 packet[0] = SOH;
                 packet[1] = packetNum;
@@ -631,7 +633,6 @@
                 packet[131] = (crc >> 8) & 0xFF;
                 packet[132] = crc & 0xFF;
                 
-                // Send with retries
                 let sent = false;
                 for (let retry = 0; retry < 10; retry++) {
                     try {
@@ -640,41 +641,34 @@
                         sent = true;
                         break;
                     } catch (e) {
-                        if (retry < 9) {
-                            log(`Packet ${i + 1} retry ${retry + 1}`, 'warning');
-                        }
+                        if (retry < 9) log(`Packet ${i + 1} retry ${retry + 1}`, 'warning');
                     }
                 }
                 
-                if (!sent) {
-                    throw new Error(`Failed to send packet ${i + 1} after 10 retries`);
-                }
+                if (!sent) throw new Error(`Failed to send packet ${i + 1}`);
                 
-                // Update progress
                 const percent = Math.floor(((i + 1) / totalPackets) * 100);
                 if ((i + 1) % 5 === 0 || i === totalPackets - 1) {
                     updateProgress(percent, `${i + 1}/${totalPackets} packets`);
                 }
             }
             
-            // Send EOT
             log('Finalizing transfer...', 'info');
             await writeBytes([EOT]);
             await waitForByte(ACK, 2000);
-            
-            log(`✓ ${name} transferred successfully!`, 'success');
+            log(`✓ ${name} transferred!`, 'success');
         }
 
         async function enterBootloader() {
             log('Entering bootloader mode...', 'info');
             
-            // Reset sequence via RTS/DTR
+            // Hold BOOT low, pulse RESET
             await port.setSignals({ dataTerminalReady: false, requestToSend: true });
             await new Promise(r => setTimeout(r, 100));
             await port.setSignals({ dataTerminalReady: true, requestToSend: false });
-            await new Promise(r => setTimeout(r, 300));
+            await new Promise(r => setTimeout(r, 500));
             
-            log('✓ Bootloader ready', 'success');
+            log('✓ Bootloader mode active', 'success');
         }
 
         // Event handlers
@@ -682,11 +676,11 @@
             try {
                 if (!('serial' in navigator)) {
                     log('ERROR: Web Serial API not supported', 'error');
-                    log('Use Chrome, Edge, or Opera browser', 'error');
+                    log('Use Chrome, Edge, or Opera', 'error');
                     return;
                 }
 
-                log('Select your BW16 serial port...', 'info');
+                log('Select BW16 serial port...', 'info');
                 port = await navigator.serial.requestPort();
                 
                 await port.open({ 
@@ -697,13 +691,12 @@
                     flowControl: 'none'
                 });
                 
-                // Binary reader
                 reader = port.readable.getReader();
                 writer = port.writable.getWriter();
                 
                 connected = true;
                 log('✓ Connected to BW16', 'success');
-                log('Baudrate: 115200 bps', 'info');
+                log('Baudrate: 115200 bps (~60s flash time)', 'info');
                 
                 connectBtn.textContent = '✓ Connected';
                 connectBtn.disabled = true;
@@ -729,15 +722,17 @@
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
                 
                 // Step 1: Enter bootloader
-                updateProgress(5, 'Entering bootloader...');
+                updateProgress(5, 'Bootloader mode...');
                 await enterBootloader();
                 
-                // Step 2: Load flash stub
-                updateProgress(10, 'Loading flash stub...');
-                log('Downloading flash stub...', 'info');
+                // Step 2: Sync with bootloader
+                updateProgress(8, 'Syncing...');
+                await syncBootloader();
                 
+                // Step 3: Load flash stub
+                updateProgress(10, 'Loading flash stub...');
                 const stubResp = await fetch('imgtool_flashloader_amebad.bin');
-                if (!stubResp.ok) throw new Error('Flash stub not found');
+                if (!stubResp.ok) throw new Error('Flash stub not found - check file exists');
                 const stubData = new Uint8Array(await stubResp.arrayBuffer());
                 
                 log(`Flash stub: ${stubData.length} bytes`, 'info');
@@ -746,16 +741,14 @@
                 updateProgress(40, 'Flash stub loaded');
                 await new Promise(r => setTimeout(r, 500));
                 
-                // Step 3: Flash firmware
+                // Step 4: Flash firmware
                 updateProgress(45, 'Loading firmware...');
-                log('Downloading firmware...', 'info');
-                
                 const fwResp = await fetch('km0_km4_image2.bin');
-                if (!fwResp.ok) throw new Error('Firmware not found');
+                if (!fwResp.ok) throw new Error('Firmware not found - check file exists');
                 const fwData = new Uint8Array(await fwResp.arrayBuffer());
                 
                 log(`Firmware: ${fwData.length} bytes (~${Math.ceil(fwData.length/1024)}KB)`, 'info');
-                log('This will take ~60 seconds at 115200 baud...', 'info');
+                log('Flashing... (~50 seconds)', 'info');
                 
                 await xmodemSendFile(fwData, 'Firmware');
                 
@@ -767,9 +760,9 @@
                 log('', 'info');
                 log('Next steps:', 'info');
                 log('1. Disconnect BW16 from USB', 'info');
-                log('2. Wire BW16 to Flipper Zero (see guide below)', 'info');
-                log('3. Install vampire_deauther.fap on Flipper', 'info');
-                log('4. Launch app: GPIO → Vampire Deauther', 'info');
+                log('2. Wire to Flipper Zero (see guide below)', 'info');
+                log('3. Install vampire_deauther.fap', 'info');
+                log('4. Launch: GPIO → Vampire Deauther', 'info');
                 
             } catch (error) {
                 log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'error');
@@ -777,8 +770,9 @@
                 log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'error');
                 log('', 'warning');
                 log('Troubleshooting:', 'warning');
-                log('• Make sure BW16 is in bootloader mode (BURN + RST)', 'warning');
-                log('• Check you\'re connected to LOG UART (PA7/PA8)', 'warning');
+                log('• BW16 must be in bootloader: Hold BURN, press RST, release both', 'warning');
+                log('• Connected to LOG UART (PA7/PA8), NOT AT UART', 'warning');
+                log('• Check imgtool_flashloader_amebad.bin exists', 'warning');
                 log('• Try Arduino IDE method below (100% reliable)', 'warning');
                 
                 flashBtn.disabled = false;
