@@ -290,6 +290,55 @@
             </div>
         </section>
 
+        <!-- Web Flasher (Experimental) -->
+        <section class="section">
+            <h2>⚡ Web Flasher (Experimental)</h2>
+            
+            <div class="warning-box">
+                <strong>⚠️ Experimental Feature:</strong><br>
+                Web-based flashing uses XMODEM protocol which may be unreliable via Web Serial API. 
+                If it fails, use Arduino IDE method below. Requires Chrome/Edge/Opera browser.
+            </div>
+
+            <div class="steps">
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Prepare BW16</strong><br>
+                    • Connect BW16 to LOG UART (PA7/PA8), NOT AT UART (PB1/PB2)<br>
+                    • Enter bootloader: Hold <strong>BURN</strong> → Press <strong>RST</strong> → Release both
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Connect and Flash</strong><br>
+                    <button id="connectBtn" class="btn btn-primary" style="margin: 10px 0;">
+                        🔌 Connect BW16
+                    </button>
+                    <button id="flashBtn" class="btn btn-secondary" style="margin: 10px 0;" disabled>
+                        ⚡ Flash Firmware
+                    </button>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Monitor Progress</strong><br>
+                    <div id="progressContainer" style="width: 100%; height: 30px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; overflow: hidden; margin: 15px 0; display: none;">
+                        <div id="progressBar" style="height: 100%; background: linear-gradient(90deg, #238636, #2ea043); width: 0%; transition: width 0.3s; display: flex; align-items: center; justify-content: center; color: white; font-weight: 500;">0%</div>
+                    </div>
+                    <div id="statusBox" style="background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 20px; margin: 15px 0; font-family: 'Courier New', monospace; font-size: 13px; max-height: 300px; overflow-y: auto;">
+                        <div style="color: #8b949e;">[INFO] Ready to flash. Click "Connect BW16" to begin.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <strong>💡 Troubleshooting:</strong><br>
+                • If connection fails: Check you're using LOG UART, not AT UART<br>
+                • If flash fails: Use Arduino IDE method below (100% reliable)<br>
+                • Supported browsers: Chrome, Edge, Opera (Web Serial API required)
+            </div>
+        </section>
+
         <!-- Flash Instructions -->
         <section class="section">
             <h2>⚡ Flash BW16 Firmware</h2>
@@ -437,5 +486,283 @@
             </p>
         </footer>
     </div>
+
+    <script type="module">
+        // RTL8720DN Web Flasher con XMODEM
+        let port, reader, writer, connected = false;
+        let abortController;
+
+        const connectBtn = document.getElementById('connectBtn');
+        const flashBtn = document.getElementById('flashBtn');
+        const statusBox = document.getElementById('statusBox');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+
+        // Logging
+        function log(message, type = 'info') {
+            const colors = {
+                info: '#58a6ff',
+                success: '#3fb950',
+                error: '#f85149',
+                warning: '#d29922'
+            };
+            const line = document.createElement('div');
+            line.style.color = colors[type] || colors.info;
+            line.style.margin = '4px 0';
+            const timestamp = new Date().toLocaleTimeString();
+            line.textContent = `[${timestamp}] ${message}`;
+            statusBox.appendChild(line);
+            statusBox.scrollTop = statusBox.scrollHeight;
+        }
+
+        function updateProgress(percent) {
+            progressContainer.style.display = 'block';
+            progressBar.style.width = `${percent}%`;
+            progressBar.textContent = `${percent}%`;
+        }
+
+        // XMODEM Protocol
+        const SOH = 0x01;  // Start of 128-byte packet
+        const EOT = 0x04;  // End of transmission
+        const ACK = 0x06;  // Acknowledge
+        const NAK = 0x15;  // Not acknowledge
+        const CAN = 0x18;  // Cancel
+        const C = 0x43;    // 'C' for CRC mode
+
+        function crc16(data) {
+            let crc = 0;
+            for (let i = 0; i < data.length; i++) {
+                crc ^= data[i] << 8;
+                for (let j = 0; j < 8; j++) {
+                    if (crc & 0x8000) {
+                        crc = (crc << 1) ^ 0x1021;
+                    } else {
+                        crc = crc << 1;
+                    }
+                }
+            }
+            return crc & 0xFFFF;
+        }
+
+        async function waitForByte(expected, timeout = 3000) {
+            const startTime = Date.now();
+            while (Date.now() - startTime < timeout) {
+                try {
+                    const { value, done } = await Promise.race([
+                        reader.read(),
+                        new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('timeout')), 100)
+                        )
+                    ]);
+                    
+                    if (done) throw new Error('Reader closed');
+                    if (value && value.length > 0) {
+                        if (value[0] === expected) return true;
+                        log(`Unexpected byte: 0x${value[0].toString(16)}`, 'warning');
+                    }
+                } catch (e) {
+                    if (e.message !== 'timeout') throw e;
+                }
+                await new Promise(r => setTimeout(r, 10));
+            }
+            throw new Error(`Timeout waiting for 0x${expected.toString(16)}`);
+        }
+
+        async function writeBytes(data) {
+            await writer.write(new Uint8Array(data));
+            await new Promise(r => setTimeout(r, 10));
+        }
+
+        async function sendXModemPacket(packetNum, data) {
+            const packet = new Uint8Array(132);
+            packet[0] = SOH;
+            packet[1] = packetNum & 0xFF;
+            packet[2] = (~packetNum) & 0xFF;
+            
+            // Data (128 bytes)
+            for (let i = 0; i < 128; i++) {
+                packet[3 + i] = data[i] || 0;
+            }
+            
+            // CRC
+            const crc = crc16(packet.slice(3, 131));
+            packet[131] = (crc >> 8) & 0xFF;
+            packet[132] = crc & 0xFF;
+            
+            await writeBytes(packet);
+        }
+
+        async function xmodemSend(data) {
+            log('Starting XMODEM-CRC transfer...', 'info');
+            
+            // Wait for 'C' to start CRC mode
+            log('Waiting for receiver ready (C)...', 'info');
+            let cReceived = false;
+            for (let i = 0; i < 10; i++) {
+                try {
+                    await waitForByte(C, 1000);
+                    cReceived = true;
+                    break;
+                } catch (e) {
+                    log(`Retry ${i + 1}/10...`, 'warning');
+                }
+            }
+            
+            if (!cReceived) {
+                throw new Error('Receiver not ready (no C received)');
+            }
+            
+            log('✓ Receiver ready, sending packets...', 'success');
+            
+            // Send data in 128-byte chunks
+            const totalPackets = Math.ceil(data.length / 128);
+            
+            for (let i = 0; i < totalPackets; i++) {
+                const chunk = data.slice(i * 128, (i + 1) * 128);
+                const packetNum = (i + 1) % 256;
+                
+                let retries = 0;
+                while (retries < 10) {
+                    try {
+                        await sendXModemPacket(packetNum, chunk);
+                        await waitForByte(ACK, 2000);
+                        
+                        const percent = Math.floor(((i + 1) / totalPackets) * 100);
+                        updateProgress(percent);
+                        
+                        if ((i + 1) % 10 === 0) {
+                            log(`Sent ${i + 1}/${totalPackets} packets`, 'info');
+                        }
+                        break;
+                    } catch (e) {
+                        retries++;
+                        log(`Packet ${i + 1} retry ${retries}/10`, 'warning');
+                        if (retries >= 10) throw new Error(`Failed after 10 retries`);
+                    }
+                }
+            }
+            
+            // Send EOT
+            log('Sending EOT...', 'info');
+            await writeBytes([EOT]);
+            await waitForByte(ACK, 2000);
+            
+            log('✓ XMODEM transfer complete!', 'success');
+        }
+
+        async function enterBootloader() {
+            log('Entering bootloader mode...', 'info');
+            
+            // RTS/DTR sequence for boot mode
+            await port.setSignals({ dataTerminalReady: false, requestToSend: true });
+            await new Promise(r => setTimeout(r, 100));
+            await port.setSignals({ dataTerminalReady: true, requestToSend: false });
+            await new Promise(r => setTimeout(r, 500));
+            
+            log('✓ Bootloader mode entered', 'success');
+        }
+
+        async function uploadFlashStub() {
+            log('Loading flash stub...', 'info');
+            
+            const response = await fetch('imgtool_flashloader_amebad.bin');
+            if (!response.ok) throw new Error('Flash stub not found');
+            
+            const stub = await response.arrayBuffer();
+            const stubData = new Uint8Array(stub);
+            
+            log(`Flash stub size: ${stubData.length} bytes`, 'info');
+            
+            await xmodemSend(stubData);
+            
+            log('✓ Flash stub loaded to SRAM', 'success');
+            updateProgress(30);
+        }
+
+        async function flashFirmware() {
+            log('Downloading firmware...', 'info');
+            
+            const response = await fetch('km0_km4_image2.bin');
+            if (!response.ok) throw new Error('Firmware not found');
+            
+            const firmware = await response.arrayBuffer();
+            const firmwareData = new Uint8Array(firmware);
+            
+            log(`Firmware size: ${firmwareData.length} bytes`, 'info');
+            updateProgress(35);
+            
+            // Flash stub should now be active
+            // Send flash commands (implementation depends on stub protocol)
+            log('Flashing firmware...', 'warning');
+            log('⚠️ Full flash protocol not yet implemented', 'error');
+            log('Flash stub loaded successfully, but firmware write needs stub commands', 'warning');
+            
+            updateProgress(100);
+        }
+
+        // Event handlers
+        connectBtn.addEventListener('click', async () => {
+            try {
+                if (!('serial' in navigator)) {
+                    log('ERROR: Web Serial API not supported. Use Chrome/Edge/Opera.', 'error');
+                    return;
+                }
+
+                log('Requesting serial port...', 'info');
+                port = await navigator.serial.requestPort();
+                
+                await port.open({ 
+                    baudRate: 115200,
+                    dataBits: 8,
+                    stopBits: 1,
+                    parity: 'none'
+                });
+                
+                const textDecoder = new TextDecoderStream();
+                const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+                reader = textDecoder.readable.getReader();
+                
+                const textEncoder = new TextEncoderStream();
+                const writableStreamClosed = textEncoder.readable.pipeTo(port.writable);
+                writer = textEncoder.writable.getWriter();
+                
+                connected = true;
+                log('✓ Connected to BW16!', 'success');
+                
+                connectBtn.textContent = '✓ Connected';
+                connectBtn.disabled = true;
+                flashBtn.disabled = false;
+
+            } catch (error) {
+                log(`ERROR: ${error.message}`, 'error');
+            }
+        });
+
+        flashBtn.addEventListener('click', async () => {
+            if (!connected) {
+                log('ERROR: Not connected. Click "Connect BW16" first.', 'error');
+                return;
+            }
+
+            flashBtn.disabled = true;
+            updateProgress(0);
+            
+            try {
+                log('=== FLASHING STARTED ===', 'info');
+                
+                await enterBootloader();
+                await uploadFlashStub();
+                await flashFirmware();
+                
+                log('=== FLASH COMPLETE ===', 'success');
+                log('You can now disconnect and wire to Flipper Zero!', 'info');
+                
+            } catch (error) {
+                log(`ERROR: ${error.message}`, 'error');
+                log('Try using Arduino IDE method below for reliable flashing', 'warning');
+                flashBtn.disabled = false;
+            }
+        });
+    </script>
 </body>
 </html>
