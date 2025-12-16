@@ -487,7 +487,7 @@
         </footer>
     </div>
     <script type="module">
-        // RTL8720DN Web Flasher - Fixed bootloader detection
+        // RTL8720DN Web Flasher - BW16 Type-C Auto Upload Mode
         let port, reader, writer, connected = false;
         let readBuffer = [];
 
@@ -543,14 +543,6 @@
             throw new Error('Timeout');
         }
 
-        async function readBytes(count, timeout = 3000) {
-            const bytes = [];
-            for (let i = 0; i < count; i++) {
-                bytes.push(await readByte(timeout));
-            }
-            return bytes;
-        }
-
         async function waitForByte(expected, timeout = 3000) {
             const byte = await readByte(timeout);
             if (byte !== expected) {
@@ -563,45 +555,50 @@
         }
 
         async function drainSerial() {
-            // Clear any buffered data
             readBuffer = [];
             await new Promise(r => setTimeout(r, 100));
-            while (true) {
-                try {
-                    await readByte(100);
-                } catch (e) {
-                    break;
-                }
-            }
+            try {
+                while (true) await readByte(50);
+            } catch (e) {}
         }
 
-        async function enterBootloaderClean() {
-            log('Resetting to clean bootloader state...', 'info');
+        // BW16 Type-C Auto Upload Mode sequence
+        async function autoUploadMode() {
+            log('Activating Auto Upload Mode...', 'info');
             
-            // Hold RST low for longer to fully reset
+            // Clear buffers
+            await drainSerial();
+            
+            // Auto Upload Circuit sequence (mimics Arduino IDE)
+            // This toggles the auto-upload circuit on BW16 Type-C
+            
+            // Step 1: Set both low
             await port.setSignals({ dataTerminalReady: false, requestToSend: false });
+            await new Promise(r => setTimeout(r, 50));
+            
+            // Step 2: DTR low, RTS high (Enter bootloader)
+            await port.setSignals({ dataTerminalReady: false, requestToSend: true });
+            await new Promise(r => setTimeout(r, 50));
+            
+            // Step 3: Release RTS, keep DTR low
+            await port.setSignals({ dataTerminalReady: false, requestToSend: false });
+            await new Promise(r => setTimeout(r, 50));
+            
+            // Step 4: Release DTR (chip is now in bootloader)
+            await port.setSignals({ dataTerminalReady: true, requestToSend: false });
             await new Promise(r => setTimeout(r, 200));
             
-            // Hold BOOT, pulse RST
-            await port.setSignals({ dataTerminalReady: false, requestToSend: true });
-            await new Promise(r => setTimeout(r, 100));
-            await port.setSignals({ dataTerminalReady: true, requestToSend: true });
-            await new Promise(r => setTimeout(r, 100));
-            await port.setSignals({ dataTerminalReady: true, requestToSend: false });
-            await new Promise(r => setTimeout(r, 500));
-            
+            // Clear any junk
             await drainSerial();
-            log('✓ Clean bootloader reset complete', 'success');
+            
+            log('✓ Auto Upload Mode active', 'success');
         }
 
-        async function waitForBootloaderReady() {
-            log('Waiting for bootloader to send C...', 'info');
+        async function waitForC() {
+            log('Waiting for bootloader C...', 'info');
             
             let attempts = 0;
-            const maxAttempts = 100;
-            
-            while (attempts < maxAttempts) {
-                // Check if we have data
+            while (attempts < 60) {
                 if (readBuffer.length > 0) {
                     const byte = readBuffer.shift();
                     
@@ -610,21 +607,20 @@
                         return true;
                     }
                     
-                    // Log any other bytes we receive
                     log(`RX: 0x${byte.toString(16).padStart(2, '0')}`, 'warning');
                 }
                 
-                // Every 2 seconds, try sending a null byte
-                if (attempts % 20 === 0 && attempts > 0) {
-                    log(`Attempt ${attempts / 10}... sending wake byte`, 'warning');
-                    await writeBytes([0x00]);
+                // Send NAK periodically to wake bootloader
+                if (attempts % 10 === 0 && attempts > 0) {
+                    await writeBytes([NAK]);
+                    log(`Attempt ${attempts}... sending NAK`, 'warning');
                 }
                 
                 await new Promise(r => setTimeout(r, 100));
                 attempts++;
             }
             
-            throw new Error('Bootloader not responding - no C received');
+            return false;
         }
 
         async function xmodemSendFile(data, name) {
@@ -682,7 +678,6 @@
             try {
                 if (!('serial' in navigator)) {
                     log('ERROR: Web Serial API not supported', 'error');
-                    log('Use Chrome, Edge, or Opera', 'error');
                     return;
                 }
 
@@ -701,7 +696,7 @@
                 writer = port.writable.getWriter();
                 
                 connected = true;
-                log('✓ Connected to BW16', 'success');
+                log('✓ Connected to BW16 Type-C', 'success');
                 
                 connectBtn.textContent = '✓ Connected';
                 connectBtn.disabled = true;
@@ -713,10 +708,7 @@
         });
 
         flashBtn.addEventListener('click', async () => {
-            if (!connected) {
-                log('ERROR: Not connected', 'error');
-                return;
-            }
+            if (!connected) return;
 
             flashBtn.disabled = true;
             updateProgress(0, 'Starting...');
@@ -726,22 +718,14 @@
                 log('🦇 VAMPIRE DEAUTHER FLASH', 'info');
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
                 
-                // CRITICAL: User must manually enter bootloader
-                log('', 'warning');
-                log('⚠️ ACTION REQUIRED:', 'warning');
-                log('1. Hold BURN button on BW16', 'warning');
-                log('2. Press RST button (while holding BURN)', 'warning');
-                log('3. Release BOTH buttons', 'warning');
-                log('4. Wait 2 seconds...', 'warning');
-                log('', 'warning');
-                
-                await new Promise(r => setTimeout(r, 3000));
-                
-                updateProgress(5, 'Entering bootloader...');
-                await enterBootloaderClean();
+                // BW16 Type-C Auto Upload Mode
+                updateProgress(5, 'Auto Upload Mode...');
+                await autoUploadMode();
                 
                 updateProgress(8, 'Waiting for bootloader...');
-                await waitForBootloaderReady();
+                if (!await waitForC()) {
+                    throw new Error('Bootloader not responding - try pressing BURN+RST manually');
+                }
                 
                 updateProgress(10, 'Loading flash stub...');
                 const stubResp = await fetch('imgtool_flashloader_amebad.bin');
@@ -754,18 +738,17 @@
                 updateProgress(40, 'Flash stub loaded');
                 await new Promise(r => setTimeout(r, 500));
                 
-                // Wait for C again after stub loaded
-                log('Waiting for flash stub to activate...', 'info');
-                await waitForBootloaderReady();
+                // Wait for C again
+                if (!await waitForC()) {
+                    log('Flash stub may be active, continuing...', 'warning');
+                }
                 
                 updateProgress(45, 'Loading firmware...');
                 const fwResp = await fetch('km0_km4_image2.bin');
                 if (!fwResp.ok) throw new Error('Firmware not found');
                 const fwData = new Uint8Array(await fwResp.arrayBuffer());
                 
-                log(`Firmware: ${fwData.length} bytes (~${Math.ceil(fwData.length/1024)}KB)`, 'info');
-                log('Flashing... (~50 seconds)', 'info');
-                
+                log(`Firmware: ${fwData.length} bytes`, 'info');
                 await xmodemSendFile(fwData, 'Firmware');
                 
                 updateProgress(100, '✓ Complete!');
@@ -779,11 +762,10 @@
                 log(`✗ FLASH FAILED: ${error.message}`, 'error');
                 log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'error');
                 log('', 'warning');
-                log('Common issues:', 'warning');
-                log('• BW16 NOT in bootloader: Hold BURN, press RST', 'warning');
-                log('• Wrong UART: Must use LOG UART (PA7/PA8)', 'warning');
-                log('• Try unplugging and reconnecting BW16', 'warning');
-                log('• Some BW16 boards need physical button press', 'warning');
+                log('Try:', 'warning');
+                log('• Manually: Hold BURN, press RST, release both', 'warning');
+                log('• Unplug and reconnect BW16', 'warning');
+                log('• Use Arduino IDE method (100% reliable)', 'warning');
                 
                 flashBtn.disabled = false;
                 updateProgress(0, 'Failed');
