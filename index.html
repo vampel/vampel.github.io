@@ -392,7 +392,35 @@
                     log(`✓ Loaded ${files[i].name} (${fileData[i].length} bytes)`, 'success');
                 }
                 
-                updateProgress(55, 'Writing to flash...');
+                updateProgress(55, 'Erasing flash blocks...');
+                
+                // Paso 7: ERASE blocks antes de escribir
+                log('Erasing flash blocks...', 'info');
+                for (let i = 0; i < files.length; i++) {
+                    const sizeInBlocks = Math.ceil(fileData[i].length / 4096);
+                    log(`Erase 0x${files[i].addr.toString(16).toUpperCase().padStart(6, '0')} (${sizeInBlocks} blocks)`, 'info');
+                    
+                    // CMD_ERASE: [0x17][addr:4bytes][size_in_4k_blocks:4bytes]
+                    const eraseCmd = [CMD_ERASE];
+                    
+                    // Address (little-endian)
+                    const addr = files[i].addr;
+                    eraseCmd.push((addr) & 0xFF);
+                    eraseCmd.push((addr >> 8) & 0xFF);
+                    eraseCmd.push((addr >> 16) & 0xFF);
+                    eraseCmd.push((addr >> 24) & 0xFF);
+                    
+                    // Size in 4KB blocks (little-endian)
+                    eraseCmd.push((sizeInBlocks) & 0xFF);
+                    eraseCmd.push((sizeInBlocks >> 8) & 0xFF);
+                    eraseCmd.push((sizeInBlocks >> 16) & 0xFF);
+                    eraseCmd.push((sizeInBlocks >> 24) & 0xFF);
+                    
+                    await sendCommand(CMD_ERASE, eraseCmd.slice(1));
+                }
+                log('✓ Erase complete', 'success');
+                
+                updateProgress(65, 'Writing to flash...');
                 
                 // Esperar NAK
                 await waitForByte(NAK, 5000);
@@ -406,7 +434,7 @@
                     await writeBlock(files[i].addr, fileData[i], i === 2); // Progress bar solo en firmware
                 }
                 
-                updateProgress(95, 'Finishing...');
+                updateProgress(98, 'Finishing...');
                 
                 // Paso 7: Reset final
                 log('Final reset...', 'info');
