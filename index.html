@@ -217,12 +217,19 @@
                     if (message.includes('Flash Download Start')) {
                         log('✓ Bootloader detected (message)!', 'success');
                         
-                        await new Promise(r => setTimeout(r, 50));
-                        readBuffer = []; // Clear buffer
-                        
                         // Send C to start XMODEM-CRC
                         await writeBytes([C]);
                         log('✓ Sent C (XMODEM-CRC mode)', 'success');
+                        
+                        // Wait and see what bootloader responds
+                        await new Promise(r => setTimeout(r, 200));
+                        log(`Buffer has ${readBuffer.length} bytes after sending C`, 'info');
+                        
+                        // Log next few bytes for debugging
+                        if (readBuffer.length > 0) {
+                            const nextBytes = readBuffer.slice(0, Math.min(10, readBuffer.length));
+                            log(`Next bytes: ${nextBytes.map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ')}`, 'info');
+                        }
                         
                         return true;
                     }
@@ -240,12 +247,19 @@
                         if (consecutiveNaks === 10) {
                             log('✓ Bootloader detected (NAKs)!', 'success');
                             
-                            await new Promise(r => setTimeout(r, 50));
-                            readBuffer = []; // Clear buffer
-                            
                             // Send C to start XMODEM-CRC
                             await writeBytes([C]);
                             log('✓ Sent C (XMODEM-CRC mode)', 'success');
+                            
+                            // Wait and see what bootloader responds
+                            await new Promise(r => setTimeout(r, 200));
+                            log(`Buffer has ${readBuffer.length} bytes after sending C`, 'info');
+                            
+                            // Log next few bytes for debugging
+                            if (readBuffer.length > 0) {
+                                const nextBytes = readBuffer.slice(0, Math.min(10, readBuffer.length));
+                                log(`Next bytes: ${nextBytes.map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ')}`, 'info');
+                            }
                             
                             return true;
                         }
