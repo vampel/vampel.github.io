@@ -213,7 +213,7 @@
         }
 
         // Realtek protocol: send_cmd implementation
-        async function sendCommand(cmd, data = []) {
+        async function sendCommand(cmd, data = [], timeout = 10000) {
             const packet = [cmd, ...data];
             
             // Si NO es comando 0x07 (SYNC), esperar NAK primero
@@ -226,7 +226,6 @@
             await writeBytes(packet);
             
             // Esperar ACK (ignorando NAKs intermedios)
-            const timeout = 10000; // 10 segundos total
             const start = Date.now();
             
             while (Date.now() - start < timeout) {
@@ -373,7 +372,7 @@
                 log('Entering flash programming mode...', 'info');
                 await sendCommand(CMD_FLASH_MODE, [0x01, 0x01, 0x00]);
                 
-                updateProgress(50, 'Loading files...');
+                updateProgress(45, 'Loading files...');
                 
                 // Paso 6: Cargar los 3 archivos necesarios
                 const files = [
@@ -392,16 +391,16 @@
                     log(`✓ Loaded ${files[i].name} (${fileData[i].length} bytes)`, 'success');
                 }
                 
-                updateProgress(55, 'Erasing flash blocks...');
+                updateProgress(50, 'Erasing flash...');
                 
                 // Paso 7: ERASE blocks antes de escribir
-                log('Erasing flash blocks...', 'info');
+                log('Erasing flash blocks (this may take 30-60 seconds)...', 'warning');
                 for (let i = 0; i < files.length; i++) {
                     const sizeInBlocks = Math.ceil(fileData[i].length / 4096);
                     log(`Erase 0x${files[i].addr.toString(16).toUpperCase().padStart(6, '0')} (${sizeInBlocks} blocks)`, 'info');
                     
                     // CMD_ERASE: [0x17][addr:4bytes][size_in_4k_blocks:4bytes]
-                    const eraseCmd = [CMD_ERASE];
+                    const eraseCmd = [];
                     
                     // Address (little-endian)
                     const addr = files[i].addr;
@@ -416,13 +415,14 @@
                     eraseCmd.push((sizeInBlocks >> 16) & 0xFF);
                     eraseCmd.push((sizeInBlocks >> 24) & 0xFF);
                     
-                    await sendCommand(CMD_ERASE, eraseCmd.slice(1));
+                    // ERASE puede tomar mucho tiempo (hasta 60 segundos)
+                    await sendCommand(CMD_ERASE, eraseCmd, 60000);
                 }
                 log('✓ Erase complete', 'success');
                 
-                updateProgress(65, 'Writing to flash...');
+                updateProgress(60, 'Writing to flash...');
                 
-                // Esperar NAK
+                // Esperar NAK después de erase
                 await waitForByte(NAK, 5000);
                 
                 // Sync antes de escribir
