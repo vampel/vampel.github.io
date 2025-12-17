@@ -96,6 +96,7 @@
             </div>
 
             <button id="connectBtn">Connect BW16</button>
+            <button id="disconnectBtn" disabled style="background: #6e7681;">Disconnect</button>
             <button id="flashBtn" disabled>Flash Firmware</button>
         </div>
     </div>
@@ -106,6 +107,7 @@
         let readerLoopActive = false;
 
         const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
         const flashBtn = document.getElementById('flashBtn');
         const statusBox = document.getElementById('statusBox');
         const progressContainer = document.getElementById('progressContainer');
@@ -371,14 +373,26 @@
                 log('Entering flash programming mode...', 'info');
                 await sendCommand(CMD_FLASH_MODE, [0x01, 0x01, 0x00]);
                 
-                updateProgress(50, 'Loading firmware...');
+                updateProgress(50, 'Loading files...');
                 
-                // Paso 6: Cargar firmware
-                const firmwareResp = await fetch('km0_km4_image2.bin');
-                if (!firmwareResp.ok) throw new Error('Firmware file not found. Please upload km0_km4_image2.bin');
-                const firmwareData = new Uint8Array(await firmwareResp.arrayBuffer());
+                // Paso 6: Cargar los 3 archivos necesarios
+                const files = [
+                    { name: 'km0_boot_all.bin', addr: 0x000000, desc: 'KM0 bootloader' },
+                    { name: 'km4_boot_all.bin', addr: 0x004000, desc: 'KM4 bootloader' },
+                    { name: 'km0_km4_image2.bin', addr: 0x006000, desc: 'Firmware' }
+                ];
                 
-                log(`Writing firmware (${firmwareData.length} bytes) to flash 0x006000...`, 'info');
+                const fileData = [];
+                for (let i = 0; i < files.length; i++) {
+                    const resp = await fetch(files[i].name);
+                    if (!resp.ok) {
+                        throw new Error(`${files[i].name} not found. Please add this file to the same folder.`);
+                    }
+                    fileData[i] = new Uint8Array(await resp.arrayBuffer());
+                    log(`✓ Loaded ${files[i].name} (${fileData[i].length} bytes)`, 'success');
+                }
+                
+                updateProgress(55, 'Writing to flash...');
                 
                 // Esperar NAK
                 await waitForByte(NAK, 5000);
@@ -386,8 +400,11 @@
                 // Sync antes de escribir
                 await sendCommand(CMD_SYNC);
                 
-                // Escribir firmware a flash
-                await writeBlock(0x006000, firmwareData, true);
+                // Escribir cada archivo
+                for (let i = 0; i < files.length; i++) {
+                    log(`Writing ${files[i].desc} to 0x${files[i].addr.toString(16).toUpperCase().padStart(6, '0')}...`, 'info');
+                    await writeBlock(files[i].addr, fileData[i], i === 2); // Progress bar solo en firmware
+                }
                 
                 updateProgress(95, 'Finishing...');
                 
@@ -444,10 +461,29 @@
                 
                 connectBtn.textContent = '✓ Connected';
                 connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
                 flashBtn.disabled = false;
 
             } catch (error) {
-                log(`Connection error: ${error.message}`, 'error');
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'error');
+                log(`❌ Connection failed: ${error.message}`, 'error');
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'error');
+                
+                if (error.message.includes('Failed to open')) {
+                    log('', 'error');
+                    log('🔧 SOLUCIONES:', 'warning');
+                    log('1. CIERRA Arduino IDE (Serial Monitor)', 'warning');
+                    log('2. CIERRA PuTTY/Tera Term/otros monitores seriales', 'warning');
+                    log('3. CIERRA otras pestañas del navegador', 'warning');
+                    log('4. Desconecta y reconecta el cable USB', 'warning');
+                    log('5. O reinicia el navegador completamente', 'warning');
+                    log('', 'error');
+                    log('El puerto está siendo usado por otro programa.', 'error');
+                } else if (error.message.includes('No port selected')) {
+                    log('Cancelaste la selección del puerto.', 'info');
+                } else {
+                    log('Error desconocido. Intenta reiniciar el navegador.', 'warning');
+                }
             }
         });
 
@@ -456,6 +492,42 @@
             flashBtn.disabled = true;
             updateProgress(0, 'Starting...');
             await flashFirmware();
+        });
+
+        disconnectBtn.addEventListener('click', async () => {
+            try {
+                stopReaderLoop();
+                
+                if (reader) {
+                    await reader.cancel();
+                    reader.releaseLock();
+                    reader = null;
+                }
+                
+                if (writer) {
+                    await writer.close();
+                    writer = null;
+                }
+                
+                if (port) {
+                    await port.close();
+                    port = null;
+                }
+                
+                connected = false;
+                
+                connectBtn.textContent = 'Connect BW16';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                flashBtn.disabled = true;
+                
+                log('✓ Disconnected successfully', 'success');
+                log('Port is now free. You can connect again.', 'info');
+                
+            } catch (error) {
+                log(`Disconnect error: ${error.message}`, 'error');
+                log('Try refreshing the page (F5)', 'warning');
+            }
         });
     </script>
 </body>
