@@ -162,6 +162,33 @@
             await writer.write(new Uint8Array(data));
         }
 
+        async function flushBuffer() {
+            log('Flushing initial buffer...', 'info');
+            const timeout = 2000; // 2 segundos
+            const start = Date.now();
+            let foundNAK = false;
+            
+            // Leer hasta encontrar primer NAK o timeout
+            while (Date.now() - start < timeout) {
+                if (readBuffer.length > 0) {
+                    const byte = readBuffer.shift();
+                    if (byte === NAK) {
+                        log('✓ Found NAK, buffer flushed', 'success');
+                        foundNAK = true;
+                        break;
+                    }
+                }
+                await new Promise(r => setTimeout(r, 10));
+            }
+            
+            if (!foundNAK) {
+                log('⚠ No NAK found during flush, continuing anyway...', 'warning');
+            }
+            
+            // Clear remaining buffer
+            readBuffer = [];
+        }
+
         async function waitForByte(expected, timeout = 5000) {
             const start = Date.now();
             while (Date.now() - start < timeout) {
@@ -196,30 +223,27 @@
             log(`→ CMD: 0x${cmd.toString(16).toUpperCase()} [${packet.map(b => '0x'+b.toString(16).toUpperCase()).join(' ')}]`, 'info');
             await writeBytes(packet);
             
-            // Esperar ACK (puede recibir NAKs antes del ACK)
-            let retries = 10;
-            while (retries--) {
-                const start = Date.now();
-                while (Date.now() - start < 5000) {
-                    if (readBuffer.length > 0) {
-                        const byte = readBuffer.shift();
-                        if (byte === ACK) {
-                            log(`← ACK (0x06)`, 'success');
-                            return true;
-                        } else if (byte === NAK) {
-                            log(`← NAK (0x15), retry...`, 'warning');
-                            break; // Salir del while interno para reintentar
-                        } else {
-                            log(`← Unexpected: 0x${byte.toString(16).toUpperCase()}`, 'warning');
-                        }
+            // Esperar ACK (ignorando NAKs intermedios)
+            const timeout = 10000; // 10 segundos total
+            const start = Date.now();
+            
+            while (Date.now() - start < timeout) {
+                if (readBuffer.length > 0) {
+                    const byte = readBuffer.shift();
+                    if (byte === ACK) {
+                        log(`← ACK (0x06)`, 'success');
+                        return true;
+                    } else if (byte === NAK) {
+                        // Ignorar NAKs, seguir esperando ACK
+                        continue;
+                    } else {
+                        throw new Error(`Unexpected byte: 0x${byte.toString(16).toUpperCase()}`);
                     }
-                    await new Promise(r => setTimeout(r, 10));
                 }
-                if (retries > 0) continue;
-                break;
+                await new Promise(r => setTimeout(r, 10));
             }
             
-            throw new Error('No ACK received after retries');
+            throw new Error('Timeout waiting for ACK');
         }
 
         // Checksum: 0xFF + sum of all bytes
@@ -297,16 +321,29 @@
                 startReaderLoop();
                 readBuffer = [];
                 
-                updateProgress(5, 'Waiting for bootloader...');
+                // Esperar un poco para que lleguen datos
+                await new Promise(r => setTimeout(r, 500));
+                
+                updateProgress(5, 'Flushing buffers...');
+                
+                // Flush: leer hasta encontrar primer NAK
+                await flushBuffer();
+                
+                updateProgress(8, 'Waiting for bootloader...');
                 
                 // Paso 1: Esperar 2 NAKs del bootloader
                 await waitForNAKs(2);
                 
                 updateProgress(10, 'Syncing with bootloader...');
                 
-                // Paso 2: Sync (NO requiere NAK antes, solo envía y espera ACK)
+                // Paso 2: Esperar 1 NAK, luego Sync
+                await waitForByte(NAK, 5000);
                 log('Sending SYNC command...', 'info');
                 await sendCommand(CMD_SYNC);
+                
+                // Paso 3: Esperar 1 NAK después del SYNC
+                await waitForByte(NAK, 5000);
+                log('✓ SYNC complete', 'success');
                 
                 updateProgress(15, 'Loading flashloader...');
                 
