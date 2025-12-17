@@ -207,19 +207,17 @@
                         
                         // Check for "Flash Download Start"
                         if (message.includes('Flash Download Start')) {
-                            readerActive = false; // Stop reader loop
-                            log('✓ Bootloader detected!', 'success');
+                            readerActive = false;
+                            log('✓ Bootloader detected (message received)!', 'success');
                             log('Initiating XMODEM transfer...', 'info');
                             
-                            // Clear any remaining NAKs
                             await new Promise(r => setTimeout(r, 100));
                             readBuffer = [];
                             
-                            // Send C to request XMODEM-CRC mode
                             await writeBytes([C]);
                             log('✓ XMODEM-CRC mode activated', 'success');
                             
-                            await readerLoop; // Wait for reader to finish
+                            await readerLoop;
                             return true;
                         }
                         
@@ -227,10 +225,32 @@
                         if (byte === NAK) {
                             nakCount++;
                             if (nakCount === 1) {
-                                log('✓ Bootloader responding...', 'success');
+                                log('✓ Bootloader responding with NAKs...', 'success');
                             }
+                            
+                            // If we get 10 NAKs in a row, bootloader is ready!
+                            if (nakCount === 10) {
+                                readerActive = false;
+                                log('✓ Bootloader detected (NAK sequence)!', 'success');
+                                log('Initiating XMODEM transfer...', 'info');
+                                
+                                await new Promise(r => setTimeout(r, 100));
+                                readBuffer = [];
+                                
+                                await writeBytes([C]);
+                                log('✓ XMODEM-CRC mode activated', 'success');
+                                
+                                await readerLoop;
+                                return true;
+                            }
+                            
                             if (nakCount % 50 === 0) {
-                                log(`Still waiting... (${nakCount} NAKs received)`, 'info');
+                                log(`Waiting... (${nakCount} NAKs)`, 'info');
+                            }
+                        } else {
+                            // Reset NAK count if we get a non-NAK byte
+                            if (byte !== 0x00 && byte !== 0x0D && byte !== 0x0A) {
+                                nakCount = 0;
                             }
                         }
                     }
