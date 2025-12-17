@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🦇 Vampire Deauther - BW16 Web Flasher</title>
+    <title>🦇 Vampire Deauther - BW16 Web Flasher v3.4</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -71,7 +71,7 @@
 <body>
     <div class="container">
         <h1>🦇 Vampire Deauther</h1>
-        <p class="subtitle">BW16 Web Flasher - Protocol v2.2</p>
+        <p class="subtitle">BW16 Web Flasher v3.4 - Firmware-only ERASE</p>
 
         <div class="warning-box">
             <h3>⚡ MODO 1: Manual (Recomendado para primera vez)</h3>
@@ -88,6 +88,9 @@
             <h2 style="margin-bottom: 20px;">📡 Web Flasher</h2>
             
             <div id="statusBox">
+                <div style="color: #58a6ff;">[INFO] Vampire Deauther Web Flasher v3.4</div>
+                <div style="color: #d29922;">[INFO] Strategy: Erase firmware area only (0x08006000)</div>
+                <div style="color: #3fb950;">[INFO] Bootloaders written without erase (may need Arduino IDE first time)</div>
                 <div style="color: #58a6ff;">[INFO] Ready. Click "Connect BW16" to begin.</div>
             </div>
 
@@ -393,31 +396,32 @@
                 
                 updateProgress(50, 'Erasing flash...');
                 
-                // Paso 7: ERASE blocks antes de escribir
-                log('Erasing flash blocks (this may take 30-60 seconds)...', 'warning');
-                for (let i = 0; i < files.length; i++) {
-                    const sizeInBlocks = Math.ceil(fileData[i].length / 4096);
-                    log(`Erase 0x${files[i].eraseAddr.toString(16).toUpperCase()} (${sizeInBlocks} blocks)`, 'info');
-                    
-                    // CMD_ERASE: [0x17][addr:4bytes][size_in_4k_blocks:4bytes]
-                    const eraseCmd = [];
-                    
-                    // Address (little-endian) - CON 0x08000000!
-                    const addr = files[i].eraseAddr;
-                    eraseCmd.push((addr) & 0xFF);
-                    eraseCmd.push((addr >> 8) & 0xFF);
-                    eraseCmd.push((addr >> 16) & 0xFF);
-                    eraseCmd.push((addr >> 24) & 0xFF);
-                    
-                    // Size in 4KB blocks (little-endian)
-                    eraseCmd.push((sizeInBlocks) & 0xFF);
-                    eraseCmd.push((sizeInBlocks >> 8) & 0xFF);
-                    eraseCmd.push((sizeInBlocks >> 16) & 0xFF);
-                    eraseCmd.push((sizeInBlocks >> 24) & 0xFF);
-                    
-                    // ERASE puede tomar mucho tiempo (hasta 60 segundos)
-                    await sendCommand(CMD_ERASE, eraseCmd, 60000);
-                }
+                // Paso 7: ERASE solo el área del firmware (0x8006000)
+                // Los bootloaders no necesitan erase si ya están flasheados
+                log('Erasing firmware area only...', 'warning');
+                
+                const firmwareIndex = 2; // km0_km4_image2.bin
+                const sizeInBlocks = Math.ceil(fileData[firmwareIndex].length / 4096);
+                log(`Erase 0x${files[firmwareIndex].eraseAddr.toString(16).toUpperCase()} (${sizeInBlocks} blocks)`, 'info');
+                
+                // CMD_ERASE: [0x17][addr:4bytes][size_in_4k_blocks:4bytes]
+                const eraseCmd = [];
+                
+                // Address (little-endian) - CON 0x08000000!
+                const addr = files[firmwareIndex].eraseAddr;
+                eraseCmd.push((addr) & 0xFF);
+                eraseCmd.push((addr >> 8) & 0xFF);
+                eraseCmd.push((addr >> 16) & 0xFF);
+                eraseCmd.push((addr >> 24) & 0xFF);
+                
+                // Size in 4KB blocks (little-endian)
+                eraseCmd.push((sizeInBlocks) & 0xFF);
+                eraseCmd.push((sizeInBlocks >> 8) & 0xFF);
+                eraseCmd.push((sizeInBlocks >> 16) & 0xFF);
+                eraseCmd.push((sizeInBlocks >> 24) & 0xFF);
+                
+                // ERASE puede tomar mucho tiempo (hasta 60 segundos)
+                await sendCommand(CMD_ERASE, eraseCmd, 120000); // 2 minutos
                 log('✓ Erase complete', 'success');
                 
                 updateProgress(60, 'Writing to flash...');
