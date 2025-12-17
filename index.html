@@ -119,12 +119,34 @@
     <script type="module">
         let port, reader, writer, connected = false;
         let readBuffer = [];
+        let readerLoopActive = false;
 
         const connectBtn = document.getElementById('connectBtn');
         const flashBtn = document.getElementById('flashBtn');
         const statusBox = document.getElementById('statusBox');
         const progressContainer = document.getElementById('progressContainer');
         const progressBar = document.getElementById('progressBar');
+
+        // Shared reader loop for entire flash process
+        async function startReaderLoop() {
+            readerLoopActive = true;
+            try {
+                while (readerLoopActive && connected) {
+                    const { value, done } = await reader.read();
+                    if (done || !readerLoopActive) break;
+                    if (value) readBuffer.push(...value);
+                    await new Promise(r => setTimeout(r, 1)); // Tiny delay
+                }
+            } catch (e) {
+                if (readerLoopActive) {
+                    console.error('Reader loop error:', e);
+                }
+            }
+        }
+
+        function stopReaderLoop() {
+            readerLoopActive = false;
+        }
 
         function log(msg, type = 'info') {
             const colors = { info: '#58a6ff', success: '#3fb950', error: '#f85149', warning: '#d29922' };
@@ -178,93 +200,71 @@
             log('Listening for bootloader response...', 'info');
             
             let nakCount = 0;
+            let consecutiveNaks = 0;
             let message = '';
             const start = Date.now();
-            let readerActive = true;
             
-            // Start dedicated reader loop for this operation
-            const readerLoop = (async () => {
-                try {
-                    while (readerActive && Date.now() - start < 30000) {
-                        const { value, done } = await reader.read();
-                        if (done || !readerActive) break;
-                        if (value) readBuffer.push(...value);
+            while (Date.now() - start < 30000) { // 30 second timeout
+                if (readBuffer.length > 0) {
+                    const byte = readBuffer.shift();
+                    
+                    // Build message from printable chars
+                    if (byte >= 32 && byte <= 126) {
+                        message += String.fromCharCode(byte);
                     }
-                } catch (e) {
-                    console.error('Reader error:', e);
-                }
-            })();
-            
-            try {
-                while (Date.now() - start < 30000) { // 30 second timeout
-                    if (readBuffer.length > 0) {
-                        const byte = readBuffer.shift();
+                    
+                    // Check for "Flash Download Start"
+                    if (message.includes('Flash Download Start')) {
+                        log('✓ Bootloader detected (message)!', 'success');
                         
-                        // Build message from printable chars
-                        if (byte >= 32 && byte <= 126) {
-                            message += String.fromCharCode(byte);
+                        await new Promise(r => setTimeout(r, 50));
+                        readBuffer = []; // Clear buffer
+                        
+                        // Send C to start XMODEM-CRC
+                        await writeBytes([C]);
+                        log('✓ Sent C (XMODEM-CRC mode)', 'success');
+                        
+                        return true;
+                    }
+                    
+                    // Count consecutive NAKs
+                    if (byte === NAK) {
+                        nakCount++;
+                        consecutiveNaks++;
+                        
+                        if (nakCount === 1) {
+                            log('✓ Bootloader responding with NAKs...', 'success');
                         }
                         
-                        // Check for "Flash Download Start"
-                        if (message.includes('Flash Download Start')) {
-                            readerActive = false;
-                            log('✓ Bootloader detected (message received)!', 'success');
-                            log('Initiating XMODEM transfer...', 'info');
+                        // If we get 10 consecutive NAKs, bootloader is ready!
+                        if (consecutiveNaks === 10) {
+                            log('✓ Bootloader detected (NAKs)!', 'success');
                             
-                            await new Promise(r => setTimeout(r, 100));
-                            readBuffer = [];
+                            await new Promise(r => setTimeout(r, 50));
+                            readBuffer = []; // Clear buffer
                             
+                            // Send C to start XMODEM-CRC
                             await writeBytes([C]);
-                            log('✓ XMODEM-CRC mode activated', 'success');
+                            log('✓ Sent C (XMODEM-CRC mode)', 'success');
                             
-                            await readerLoop;
                             return true;
                         }
                         
-                        // Count NAKs
-                        if (byte === NAK) {
-                            nakCount++;
-                            if (nakCount === 1) {
-                                log('✓ Bootloader responding with NAKs...', 'success');
-                            }
-                            
-                            // If we get 10 NAKs in a row, bootloader is ready!
-                            if (nakCount === 10) {
-                                readerActive = false;
-                                log('✓ Bootloader detected (NAK sequence)!', 'success');
-                                log('Initiating XMODEM transfer...', 'info');
-                                
-                                await new Promise(r => setTimeout(r, 100));
-                                readBuffer = [];
-                                
-                                await writeBytes([C]);
-                                log('✓ XMODEM-CRC mode activated', 'success');
-                                
-                                await readerLoop;
-                                return true;
-                            }
-                            
-                            if (nakCount % 50 === 0) {
-                                log(`Waiting... (${nakCount} NAKs)`, 'info');
-                            }
-                        } else {
-                            // Reset NAK count if we get a non-NAK byte
-                            if (byte !== 0x00 && byte !== 0x0D && byte !== 0x0A) {
-                                nakCount = 0;
-                            }
+                        if (nakCount % 50 === 0) {
+                            log(`Waiting... (${nakCount} NAKs)`, 'info');
+                        }
+                    } else {
+                        // Reset consecutive NAK count if we get a non-NAK byte
+                        if (byte !== 0x00 && byte !== 0x0D && byte !== 0x0A) {
+                            consecutiveNaks = 0;
                         }
                     }
-                    
-                    await new Promise(r => setTimeout(r, 10));
                 }
                 
-                readerActive = false;
-                throw new Error('Bootloader timeout. Is BW16 in bootloader mode? (Hold BURN, press RST, release both)');
-                
-            } catch (e) {
-                readerActive = false;
-                throw e;
+                await new Promise(r => setTimeout(r, 10));
             }
+            
+            throw new Error('Bootloader timeout. Is BW16 in bootloader mode? (Hold BURN, press RST, release both)');
         }
 
         async function xmodemSendFile(data, name) {
@@ -358,6 +358,9 @@
             updateProgress(0, 'Starting...');
             readBuffer = []; // Clear any old data
             
+            // Start reader loop for entire flash process
+            startReaderLoop();
+            
             try {
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
                 log('🦇 VAMPIRE DEAUTHER FLASH', 'info');
@@ -400,11 +403,14 @@
                 log('✓ FLASH COMPLETE!', 'success');
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'success');
                 
+                stopReaderLoop();
+                
             } catch (error) {
                 log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'error');
                 log(`✗ FLASH FAILED: ${error.message}`, 'error');
                 log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'error');
                 
+                stopReaderLoop();
                 flashBtn.disabled = false;
                 updateProgress(0, 'Failed');
             }
