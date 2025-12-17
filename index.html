@@ -118,12 +118,29 @@
     <script type="module">
         let port, reader, writer, connected = false;
         let readBuffer = [];
+        let isReading = false;
 
         const connectBtn = document.getElementById('connectBtn');
         const flashBtn = document.getElementById('flashBtn');
         const statusBox = document.getElementById('statusBox');
         const progressContainer = document.getElementById('progressContainer');
         const progressBar = document.getElementById('progressBar');
+
+        // Continuous background reader
+        async function startBackgroundReader() {
+            isReading = true;
+            try {
+                while (isReading && connected) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    if (value) readBuffer.push(...value);
+                }
+            } catch (e) {
+                if (isReading) {
+                    console.error('Background reader error:', e);
+                }
+            }
+        }
 
         function log(msg, type = 'info') {
             const colors = { info: '#58a6ff', success: '#3fb950', error: '#f85149', warning: '#d29922' };
@@ -156,16 +173,6 @@
             const start = Date.now();
             while (Date.now() - start < timeout) {
                 if (readBuffer.length > 0) return readBuffer.shift();
-                try {
-                    const { value, done } = await Promise.race([
-                        reader.read(),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 50))
-                    ]);
-                    if (done) throw new Error('Serial closed');
-                    if (value) readBuffer.push(...value);
-                } catch (e) {
-                    if (e.message !== 'timeout') throw e;
-                }
                 await new Promise(r => setTimeout(r, 10));
             }
             throw new Error('Timeout');
@@ -184,7 +191,7 @@
 
         // NEW: Wait for bootloader NAKs and respond with C
         async function waitForBootloader() {
-            log('Waiting for "#Flash Download Start" message...', 'info');
+            log('Listening for bootloader... (press buttons NOW)', 'info');
             
             let nakCount = 0;
             let message = '';
@@ -302,6 +309,9 @@
                 reader = port.readable.getReader();
                 writer = port.writable.getWriter();
                 
+                // Start background reader
+                startBackgroundReader();
+                
                 connected = true;
                 log('✓ Connected to BW16', 'success');
                 
@@ -330,9 +340,13 @@
                 log('2. Press RST (2 sec, while holding BURN)', 'warning');
                 log('3. Release RST, then release BURN', 'warning');
                 log('', 'info');
+                log('Listening for bootloader...', 'info');
+                
+                // Start background reader IMMEDIATELY
+                const bootloaderPromise = waitForBootloader();
                 
                 updateProgress(5, 'Waiting for bootloader...');
-                await waitForBootloader();
+                await bootloaderPromise;
                 
                 updateProgress(10, 'Loading flash stub...');
                 const stubResp = await fetch('imgtool_flashloader_amebad.bin');
