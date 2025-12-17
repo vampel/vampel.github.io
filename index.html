@@ -376,9 +376,9 @@
                 
                 // Paso 6: Cargar los 3 archivos necesarios
                 const files = [
-                    { name: 'km0_boot_all.bin', addr: 0x000000, desc: 'KM0 bootloader' },
-                    { name: 'km4_boot_all.bin', addr: 0x004000, desc: 'KM4 bootloader' },
-                    { name: 'km0_km4_image2.bin', addr: 0x006000, desc: 'Firmware' }
+                    { name: 'km0_boot_all.bin', addr: 0x000000, eraseAddr: 0x08000000, desc: 'KM0 bootloader' },
+                    { name: 'km4_boot_all.bin', addr: 0x004000, eraseAddr: 0x08004000, desc: 'KM4 bootloader' },
+                    { name: 'km0_km4_image2.bin', addr: 0x006000, eraseAddr: 0x08006000, desc: 'Firmware' }
                 ];
                 
                 const fileData = [];
@@ -397,13 +397,13 @@
                 log('Erasing flash blocks (this may take 30-60 seconds)...', 'warning');
                 for (let i = 0; i < files.length; i++) {
                     const sizeInBlocks = Math.ceil(fileData[i].length / 4096);
-                    log(`Erase 0x${files[i].addr.toString(16).toUpperCase().padStart(6, '0')} (${sizeInBlocks} blocks)`, 'info');
+                    log(`Erase 0x${files[i].eraseAddr.toString(16).toUpperCase()} (${sizeInBlocks} blocks)`, 'info');
                     
                     // CMD_ERASE: [0x17][addr:4bytes][size_in_4k_blocks:4bytes]
                     const eraseCmd = [];
                     
-                    // Address (little-endian)
-                    const addr = files[i].addr;
+                    // Address (little-endian) - CON 0x08000000!
+                    const addr = files[i].eraseAddr;
                     eraseCmd.push((addr) & 0xFF);
                     eraseCmd.push((addr >> 8) & 0xFF);
                     eraseCmd.push((addr >> 16) & 0xFF);
