@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🦇 Vampire Deauther - BW16 Flasher</title>
+    <title>🦇 Vampire Deauther - BW16 Web Flasher</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -30,20 +30,6 @@
             margin-bottom: 20px;
         }
         .warning-box h3 { color: #f85149; margin-bottom: 10px; }
-        .steps {
-            background: #0d1117;
-            padding: 20px;
-            border-radius: 6px;
-            margin: 20px 0;
-        }
-        .step {
-            background: #161b22;
-            padding: 15px;
-            margin: 10px 0;
-            border-left: 3px solid #58a6ff;
-            border-radius: 3px;
-        }
-        .step strong { color: #58a6ff; font-size: 1.1em; }
         button {
             background: #238636;
             color: white;
@@ -63,7 +49,7 @@
             border: 1px solid #30363d;
             border-radius: 6px;
             padding: 15px;
-            height: 300px;
+            height: 400px;
             overflow-y: auto;
             font-family: 'Courier New', monospace;
             font-size: 13px;
@@ -85,19 +71,17 @@
 <body>
     <div class="container">
         <h1>🦇 Vampire Deauther</h1>
-        <p class="subtitle">BW16 Web Flasher - Working Edition</p>
+        <p class="subtitle">BW16 Web Flasher - Protocol v2.2</p>
 
         <div class="warning-box">
-            <h3>⚡ IMPORTANT: Enter Bootloader Mode FIRST</h3>
-            <p><strong>Before clicking "Flash Firmware", put BW16 in bootloader mode:</strong></p>
+            <h3>⚡ MODO 1: Manual (Recomendado para primera vez)</h3>
             <ol style="margin-left: 20px; margin-top: 10px; line-height: 2;">
-                <li><strong>Hold BURN</strong> button (~5 seconds)</li>
-                <li>While holding BURN, <strong>press RST</strong> button (~2 seconds)</li>
+                <li>Click "Connect BW16"</li>
+                <li><strong>Hold BURN</strong> button (~5 sec)</li>
+                <li>While holding BURN, <strong>press RST</strong> (~2 sec)</li>
                 <li><strong>Release RST</strong> first, then release BURN</li>
-                <li>You should see text appear in Arduino Serial Monitor (if connected)</li>
-                <li><strong>NOW</strong> click "Flash Firmware" below ⬇️</li>
+                <li>Click "Flash Firmware" ⬇️</li>
             </ol>
-            <p style="margin-top: 10px; color: #f85149;"><strong>⚠️ The bootloader only stays active for ~30 seconds. If flashing fails, repeat these steps.</strong></p>
         </div>
 
         <div class="flasher-box">
@@ -127,7 +111,19 @@
         const progressContainer = document.getElementById('progressContainer');
         const progressBar = document.getElementById('progressBar');
 
-        // Shared reader loop for entire flash process
+        // Realtek protocol constants
+        const CMD_CHANGE_BAUD = 0x05;
+        const CMD_SYNC = 0x07;
+        const CMD_WRITE = 0x02;
+        const CMD_RESET = 0x04;
+        const CMD_FLASH_MODE = 0x26;
+        const CMD_ERASE = 0x17;
+        const CMD_VERIFY = 0x27;
+        
+        const ACK = 0x06;
+        const NAK = 0x15;
+
+        // Shared reader loop
         async function startReaderLoop() {
             readerLoopActive = true;
             try {
@@ -135,12 +131,10 @@
                     const { value, done } = await reader.read();
                     if (done || !readerLoopActive) break;
                     if (value) readBuffer.push(...value);
-                    await new Promise(r => setTimeout(r, 1)); // Tiny delay
+                    await new Promise(r => setTimeout(r, 1));
                 }
             } catch (e) {
-                if (readerLoopActive) {
-                    console.error('Reader loop error:', e);
-                }
+                if (readerLoopActive) console.error('Reader loop error:', e);
             }
         }
 
@@ -164,178 +158,232 @@
             progressBar.textContent = text || `${percent}%`;
         }
 
-        const SOH = 0x01, EOT = 0x04, ACK = 0x06, NAK = 0x15, C = 0x43;
-
-        function crc16(data) {
-            let crc = 0;
-            for (let i = 0; i < data.length; i++) {
-                crc ^= data[i] << 8;
-                for (let j = 0; j < 8; j++) crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1;
-            }
-            return crc & 0xFFFF;
-        }
-
-        async function readByte(timeout = 3000) {
-            const start = Date.now();
-            while (Date.now() - start < timeout) {
-                if (readBuffer.length > 0) return readBuffer.shift();
-                await new Promise(r => setTimeout(r, 10));
-            }
-            throw new Error('Timeout');
-        }
-
-        async function waitForByte(expected, timeout = 3000) {
-            const byte = await readByte(timeout);
-            if (byte !== expected) {
-                throw new Error(`Expected 0x${expected.toString(16).padStart(2, '0')}, got 0x${byte.toString(16).padStart(2, '0')}`);
-            }
-        }
-
         async function writeBytes(data) {
             await writer.write(new Uint8Array(data));
         }
 
-        // NEW: Wait for bootloader NAKs and respond with C
-        async function waitForBootloader() {
-            log('Listening for bootloader response...', 'info');
-            
-            let nakCount = 0;
-            let consecutiveNaks = 0;
-            let message = '';
+        async function waitForByte(expected, timeout = 5000) {
             const start = Date.now();
-            
-            while (Date.now() - start < 30000) { // 30 second timeout
+            while (Date.now() - start < timeout) {
                 if (readBuffer.length > 0) {
                     const byte = readBuffer.shift();
-                    
-                    // Build message from printable chars
-                    if (byte >= 32 && byte <= 126) {
-                        message += String.fromCharCode(byte);
-                    }
-                    
-                    // Check for "Flash Download Start"
-                    if (message.includes('Flash Download Start')) {
-                        log('✓ Bootloader detected (message)!', 'success');
-                        
-                        // Send C to start XMODEM-CRC
-                        await writeBytes([C]);
-                        log('✓ Sent C (XMODEM-CRC mode)', 'success');
-                        
-                        // Wait and see what bootloader responds
-                        await new Promise(r => setTimeout(r, 200));
-                        log(`Buffer has ${readBuffer.length} bytes after sending C`, 'info');
-                        
-                        // Log next few bytes for debugging
-                        if (readBuffer.length > 0) {
-                            const nextBytes = readBuffer.slice(0, Math.min(10, readBuffer.length));
-                            log(`Next bytes: ${nextBytes.map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ')}`, 'info');
-                        }
-                        
-                        return true;
-                    }
-                    
-                    // Count consecutive NAKs
-                    if (byte === NAK) {
-                        nakCount++;
-                        consecutiveNaks++;
-                        
-                        if (nakCount === 1) {
-                            log('✓ Bootloader responding with NAKs...', 'success');
-                        }
-                        
-                        // If we get 10 consecutive NAKs, bootloader is ready!
-                        if (consecutiveNaks === 10) {
-                            log('✓ Bootloader detected (NAKs)!', 'success');
-                            
-                            // Send C to start XMODEM-CRC
-                            await writeBytes([C]);
-                            log('✓ Sent C (XMODEM-CRC mode)', 'success');
-                            
-                            // Wait and see what bootloader responds
-                            await new Promise(r => setTimeout(r, 200));
-                            log(`Buffer has ${readBuffer.length} bytes after sending C`, 'info');
-                            
-                            // Log next few bytes for debugging
-                            if (readBuffer.length > 0) {
-                                const nextBytes = readBuffer.slice(0, Math.min(10, readBuffer.length));
-                                log(`Next bytes: ${nextBytes.map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ')}`, 'info');
-                            }
-                            
-                            return true;
-                        }
-                        
-                        if (nakCount % 50 === 0) {
-                            log(`Waiting... (${nakCount} NAKs)`, 'info');
-                        }
-                    } else {
-                        // Reset consecutive NAK count if we get a non-NAK byte
-                        if (byte !== 0x00 && byte !== 0x0D && byte !== 0x0A) {
-                            consecutiveNaks = 0;
-                        }
-                    }
+                    if (byte === expected) return byte;
+                    log(`Expected 0x${expected.toString(16).toUpperCase()}, got 0x${byte.toString(16).toUpperCase()}`, 'warning');
                 }
-                
                 await new Promise(r => setTimeout(r, 10));
             }
-            
-            throw new Error('Bootloader timeout. Is BW16 in bootloader mode? (Hold BURN, press RST, release both)');
+            throw new Error(`Timeout waiting for 0x${expected.toString(16).toUpperCase()}`);
         }
 
-        async function xmodemSendFile(data, name) {
-            log(`Starting XMODEM transfer of ${name}...`, 'info');
+        async function waitForNAKs(count, timeout = 5000) {
+            log(`Waiting for ${count} NAK(s)...`, 'info');
+            for (let i = 0; i < count; i++) {
+                await waitForByte(NAK, timeout);
+            }
+            log(`✓ Got ${count} NAK(s)`, 'success');
+        }
+
+        // Realtek protocol: send_cmd implementation
+        async function sendCommand(cmd, data = []) {
+            const packet = [cmd, ...data];
             
-            const totalPackets = Math.ceil(data.length / 128);
-            log(`Sending ${totalPackets} packets...`, 'info');
+            // Si NO es comando 0x07 (SYNC), esperar NAK primero
+            if (cmd !== CMD_SYNC) {
+                await waitForByte(NAK, 5000);
+            }
+            
+            // Enviar comando
+            log(`→ CMD: 0x${cmd.toString(16).toUpperCase()} [${packet.map(b => '0x'+b.toString(16).toUpperCase()).join(' ')}]`, 'info');
+            await writeBytes(packet);
+            
+            // Esperar ACK (puede recibir NAKs antes del ACK)
+            let retries = 10;
+            while (retries--) {
+                const start = Date.now();
+                while (Date.now() - start < 5000) {
+                    if (readBuffer.length > 0) {
+                        const byte = readBuffer.shift();
+                        if (byte === ACK) {
+                            log(`← ACK (0x06)`, 'success');
+                            return true;
+                        } else if (byte === NAK) {
+                            log(`← NAK (0x15), retry...`, 'warning');
+                            break; // Salir del while interno para reintentar
+                        } else {
+                            log(`← Unexpected: 0x${byte.toString(16).toUpperCase()}`, 'warning');
+                        }
+                    }
+                    await new Promise(r => setTimeout(r, 10));
+                }
+                if (retries > 0) continue;
+                break;
+            }
+            
+            throw new Error('No ACK received after retries');
+        }
+
+        // Checksum: 0xFF + sum of all bytes
+        function calculateChecksum(data) {
+            let sum = 0xFF;
+            for (let i = 0; i < data.length; i++) {
+                sum = (sum + data[i]) & 0xFF;
+            }
+            return sum;
+        }
+
+        // Write 1KB packet
+        async function write1KB(seq, addr, data) {
+            const packet = new Uint8Array(1032);
+            
+            packet[0] = CMD_WRITE;
+            packet[1] = seq & 0xFF;
+            packet[2] = (~seq) & 0xFF;
+            
+            // Address (little-endian)
+            packet[3] = (addr) & 0xFF;
+            packet[4] = (addr >> 8) & 0xFF;
+            packet[5] = (addr >> 16) & 0xFF;
+            packet[6] = (addr >> 24) & 0xFF;
+            
+            // Data (1024 bytes)
+            packet.set(data, 7);
+            
+            // Checksum
+            packet[1031] = calculateChecksum(packet.subarray(0, 1031));
+            
+            // Send packet
+            await writeBytes(packet);
+            
+            // Wait for ACK
+            await waitForByte(ACK, 3000);
+        }
+
+        // Write block implementation
+        async function writeBlock(addr, data, showProgress = false) {
+            const totalPackets = Math.ceil(data.length / 1024);
+            log(`Writing ${totalPackets} packets (${data.length} bytes) to 0x${addr.toString(16).toUpperCase()}...`, 'info');
+            
+            // Wait for NAK before starting
+            await waitForByte(NAK, 5000);
             
             for (let i = 0; i < totalPackets; i++) {
-                const packetNum = (i + 1) % 256;
-                const start = i * 128;
-                const chunk = new Uint8Array(128);
+                const start = i * 1024;
+                const chunk = new Uint8Array(1024);
                 
-                for (let j = 0; j < 128; j++) {
-                    chunk[j] = (start + j < data.length) ? data[start + j] : 0x1A;
+                // Copy data, pad with 0xFF if needed
+                for (let j = 0; j < 1024; j++) {
+                    chunk[j] = (start + j < data.length) ? data[start + j] : 0xFF;
                 }
                 
-                const packet = new Uint8Array(133);
-                packet[0] = SOH;
-                packet[1] = packetNum;
-                packet[2] = 0xFF - packetNum;
-                packet.set(chunk, 3);
+                const seq = (i + 1) & 0xFF;
+                await write1KB(seq, addr + start, chunk);
                 
-                const crc = crc16(chunk);
-                packet[131] = (crc >> 8) & 0xFF;
-                packet[132] = crc & 0xFF;
-                
-                let sent = false;
-                for (let retry = 0; retry < 10; retry++) {
-                    try {
-                        await writeBytes(packet);
-                        await waitForByte(ACK, 2000);
-                        sent = true;
-                        break;
-                    } catch (e) {
-                        if (retry < 9) log(`Packet ${i + 1} retry ${retry + 1}`, 'warning');
-                    }
-                }
-                
-                if (!sent) throw new Error(`Failed to send packet ${i + 1}`);
-                
-                const percent = Math.floor(((i + 1) / totalPackets) * 100);
-                if ((i + 1) % 5 === 0 || i === totalPackets - 1) {
-                    updateProgress(percent, `${i + 1}/${totalPackets} packets`);
+                if (showProgress && (i % 5 === 0 || i === totalPackets - 1)) {
+                    const percent = Math.floor(((i + 1) / totalPackets) * 100);
+                    log(`Progress: ${i + 1}/${totalPackets} packets`, 'info');
                 }
             }
             
-            log('Finalizing transfer...', 'info');
-            await writeBytes([EOT]);
-            await waitForByte(ACK, 2000);
-            log(`✓ ${name} transferred!`, 'success');
+            log(`✓ Block written successfully`, 'success');
+        }
+
+        async function flashFirmware() {
+            try {
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                log('🦇 VAMPIRE DEAUTHER FLASH START', 'info');
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+                
+                // Start reader loop
+                startReaderLoop();
+                readBuffer = [];
+                
+                updateProgress(5, 'Waiting for bootloader...');
+                
+                // Paso 1: Esperar 2 NAKs del bootloader
+                await waitForNAKs(2);
+                
+                updateProgress(10, 'Syncing with bootloader...');
+                
+                // Paso 2: Sync (NO requiere NAK antes, solo envía y espera ACK)
+                log('Sending SYNC command...', 'info');
+                await sendCommand(CMD_SYNC);
+                
+                updateProgress(15, 'Loading flashloader...');
+                
+                // Paso 3: Cargar flashloader a RAM
+                const flashloaderResp = await fetch('imgtool_flashloader_amebad.bin');
+                if (!flashloaderResp.ok) throw new Error('Flashloader file not found. Please upload imgtool_flashloader_amebad.bin');
+                const flashloaderData = new Uint8Array(await flashloaderResp.arrayBuffer());
+                
+                log(`Uploading flashloader (${flashloaderData.length} bytes) to RAM 0x082000...`, 'info');
+                await writeBlock(0x082000, flashloaderData, false);
+                
+                updateProgress(30, 'Activating flashloader...');
+                
+                // Paso 4: Reset flashloader
+                log('Resetting flashloader...', 'info');
+                await sendCommand(CMD_RESET);
+                
+                // Esperar a que flashloader reinicie
+                await new Promise(r => setTimeout(r, 500));
+                await waitForNAKs(2);
+                
+                updateProgress(40, 'Entering flash mode...');
+                
+                // Paso 5: Entrar en modo flash
+                log('Entering flash programming mode...', 'info');
+                await sendCommand(CMD_FLASH_MODE, [0x01, 0x01, 0x00]);
+                
+                updateProgress(50, 'Loading firmware...');
+                
+                // Paso 6: Cargar firmware
+                const firmwareResp = await fetch('km0_km4_image2.bin');
+                if (!firmwareResp.ok) throw new Error('Firmware file not found. Please upload km0_km4_image2.bin');
+                const firmwareData = new Uint8Array(await firmwareResp.arrayBuffer());
+                
+                log(`Writing firmware (${firmwareData.length} bytes) to flash 0x006000...`, 'info');
+                
+                // Esperar NAK
+                await waitForByte(NAK, 5000);
+                
+                // Sync antes de escribir
+                await sendCommand(CMD_SYNC);
+                
+                // Escribir firmware a flash
+                await writeBlock(0x006000, firmwareData, true);
+                
+                updateProgress(95, 'Finishing...');
+                
+                // Paso 7: Reset final
+                log('Final reset...', 'info');
+                await sendCommand(CMD_RESET);
+                
+                updateProgress(100, '✓ Complete!');
+                
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'success');
+                log('✅ FLASH COMPLETE!', 'success');
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'success');
+                log('You can now disconnect and reset your BW16', 'info');
+                
+                stopReaderLoop();
+                flashBtn.disabled = false;
+                
+            } catch (error) {
+                log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'error');
+                log(`❌ FLASH FAILED: ${error.message}`, 'error');
+                log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'error');
+                
+                stopReaderLoop();
+                flashBtn.disabled = false;
+                updateProgress(0, 'Failed');
+            }
         }
 
         connectBtn.addEventListener('click', async () => {
             try {
                 if (!('serial' in navigator)) {
-                    log('ERROR: Web Serial API not supported', 'error');
+                    log('❌ Web Serial API not supported in this browser', 'error');
+                    log('Please use Chrome, Edge, or Opera', 'error');
                     return;
                 }
 
@@ -354,7 +402,8 @@
                 writer = port.writable.getWriter();
                 
                 connected = true;
-                log('✓ Connected to BW16', 'success');
+                log('✅ Connected to BW16 at 115200 baud', 'success');
+                log('Now enter bootloader mode (BURN+RST)', 'warning');
                 
                 connectBtn.textContent = '✓ Connected';
                 connectBtn.disabled = true;
@@ -367,67 +416,9 @@
 
         flashBtn.addEventListener('click', async () => {
             if (!connected) return;
-
             flashBtn.disabled = true;
             updateProgress(0, 'Starting...');
-            readBuffer = []; // Clear any old data
-            
-            // Start reader loop for entire flash process
-            startReaderLoop();
-            
-            try {
-                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
-                log('🦇 VAMPIRE DEAUTHER FLASH', 'info');
-                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
-                log('', 'info');
-                log('Waiting for bootloader...', 'info');
-                log('(BW16 should already be in bootloader mode)', 'warning');
-                
-                updateProgress(5, 'Waiting for bootloader...');
-                
-                // Start listening immediately
-                await waitForBootloader();
-                
-                updateProgress(10, 'Loading flash stub...');
-                const stubResp = await fetch('imgtool_flashloader_amebad.bin');
-                if (!stubResp.ok) throw new Error('Flash stub not found');
-                const stubData = new Uint8Array(await stubResp.arrayBuffer());
-                
-                log(`Flash stub: ${stubData.length} bytes`, 'info');
-                await xmodemSendFile(stubData, 'Flash Stub');
-                
-                updateProgress(40, 'Flash stub loaded');
-                await new Promise(r => setTimeout(r, 500));
-                
-                // Bootloader should send NAKs again, respond with C
-                log('Activating flash stub...', 'info');
-                await waitForBootloader();
-                
-                updateProgress(45, 'Loading firmware...');
-                const fwResp = await fetch('km0_km4_image2.bin');
-                if (!fwResp.ok) throw new Error('Firmware not found');
-                const fwData = new Uint8Array(await fwResp.arrayBuffer());
-                
-                log(`Firmware: ${fwData.length} bytes (~60s)`, 'info');
-                await xmodemSendFile(fwData, 'Firmware');
-                
-                updateProgress(100, '✓ Complete!');
-                
-                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'success');
-                log('✓ FLASH COMPLETE!', 'success');
-                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'success');
-                
-                stopReaderLoop();
-                
-            } catch (error) {
-                log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'error');
-                log(`✗ FLASH FAILED: ${error.message}`, 'error');
-                log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'error');
-                
-                stopReaderLoop();
-                flashBtn.disabled = false;
-                updateProgress(0, 'Failed');
-            }
+            await flashFirmware();
         });
     </script>
 </body>
