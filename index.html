@@ -88,15 +88,16 @@
         <p class="subtitle">BW16 Web Flasher - Working Edition</p>
 
         <div class="warning-box">
-            <h3>📋 Button Sequence Required</h3>
-            <p><strong>When you click "Flash Firmware", do this:</strong></p>
+            <h3>⚡ IMPORTANT: Enter Bootloader Mode FIRST</h3>
+            <p><strong>Before clicking "Flash Firmware", put BW16 in bootloader mode:</strong></p>
             <ol style="margin-left: 20px; margin-top: 10px; line-height: 2;">
-                <li>Hold <strong>BURN</strong> button (5 seconds)</li>
-                <li>Press <strong>RST</strong> button (2 seconds, while holding BURN)</li>
-                <li>Release <strong>RST</strong> → Wait for "#Flash Download Start"</li>
-                <li>Release <strong>BURN</strong></li>
-                <li>Flasher will proceed automatically!</li>
+                <li><strong>Hold BURN</strong> button (~5 seconds)</li>
+                <li>While holding BURN, <strong>press RST</strong> button (~2 seconds)</li>
+                <li><strong>Release RST</strong> first, then release BURN</li>
+                <li>You should see text appear in Arduino Serial Monitor (if connected)</li>
+                <li><strong>NOW</strong> click "Flash Firmware" below ⬇️</li>
             </ol>
+            <p style="margin-top: 10px; color: #f85149;"><strong>⚠️ The bootloader only stays active for ~30 seconds. If flashing fails, repeat these steps.</strong></p>
         </div>
 
         <div class="flasher-box">
@@ -118,29 +119,12 @@
     <script type="module">
         let port, reader, writer, connected = false;
         let readBuffer = [];
-        let isReading = false;
 
         const connectBtn = document.getElementById('connectBtn');
         const flashBtn = document.getElementById('flashBtn');
         const statusBox = document.getElementById('statusBox');
         const progressContainer = document.getElementById('progressContainer');
         const progressBar = document.getElementById('progressBar');
-
-        // Continuous background reader
-        async function startBackgroundReader() {
-            isReading = true;
-            try {
-                while (isReading && connected) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-                    if (value) readBuffer.push(...value);
-                }
-            } catch (e) {
-                if (isReading) {
-                    console.error('Background reader error:', e);
-                }
-            }
-        }
 
         function log(msg, type = 'info') {
             const colors = { info: '#58a6ff', success: '#3fb950', error: '#f85149', warning: '#d29922' };
@@ -191,50 +175,76 @@
 
         // NEW: Wait for bootloader NAKs and respond with C
         async function waitForBootloader() {
-            log('Listening for bootloader... (press buttons NOW)', 'info');
+            log('Listening for bootloader response...', 'info');
             
             let nakCount = 0;
             let message = '';
             const start = Date.now();
+            let readerActive = true;
             
-            while (Date.now() - start < 30000) { // 30 second timeout
-                if (readBuffer.length > 0) {
-                    const byte = readBuffer.shift();
-                    
-                    // Build message from printable chars
-                    if (byte >= 32 && byte <= 126) {
-                        message += String.fromCharCode(byte);
+            // Start dedicated reader loop for this operation
+            const readerLoop = (async () => {
+                try {
+                    while (readerActive && Date.now() - start < 30000) {
+                        const { value, done } = await reader.read();
+                        if (done || !readerActive) break;
+                        if (value) readBuffer.push(...value);
                     }
-                    
-                    // Check for "Flash Download Start"
-                    if (message.includes('Flash Download Start')) {
-                        log('✓ Got bootloader message!', 'success');
-                        log('Bootloader is ready, responding with C...', 'info');
+                } catch (e) {
+                    console.error('Reader error:', e);
+                }
+            })();
+            
+            try {
+                while (Date.now() - start < 30000) { // 30 second timeout
+                    if (readBuffer.length > 0) {
+                        const byte = readBuffer.shift();
                         
-                        // Clear any remaining NAKs
-                        await new Promise(r => setTimeout(r, 100));
-                        readBuffer = [];
+                        // Build message from printable chars
+                        if (byte >= 32 && byte <= 126) {
+                            message += String.fromCharCode(byte);
+                        }
                         
-                        // Send C to request XMODEM-CRC mode
-                        await writeBytes([C]);
-                        log('✓ Sent C (XMODEM-CRC mode request)', 'success');
+                        // Check for "Flash Download Start"
+                        if (message.includes('Flash Download Start')) {
+                            readerActive = false; // Stop reader loop
+                            log('✓ Bootloader detected!', 'success');
+                            log('Initiating XMODEM transfer...', 'info');
+                            
+                            // Clear any remaining NAKs
+                            await new Promise(r => setTimeout(r, 100));
+                            readBuffer = [];
+                            
+                            // Send C to request XMODEM-CRC mode
+                            await writeBytes([C]);
+                            log('✓ XMODEM-CRC mode activated', 'success');
+                            
+                            await readerLoop; // Wait for reader to finish
+                            return true;
+                        }
                         
-                        return true;
-                    }
-                    
-                    // Count NAKs
-                    if (byte === NAK) {
-                        nakCount++;
-                        if (nakCount % 20 === 0) {
-                            log(`Received ${nakCount} NAKs... (still waiting for bootloader message)`, 'warning');
+                        // Count NAKs
+                        if (byte === NAK) {
+                            nakCount++;
+                            if (nakCount === 1) {
+                                log('✓ Bootloader responding...', 'success');
+                            }
+                            if (nakCount % 50 === 0) {
+                                log(`Still waiting... (${nakCount} NAKs received)`, 'info');
+                            }
                         }
                     }
+                    
+                    await new Promise(r => setTimeout(r, 10));
                 }
                 
-                await new Promise(r => setTimeout(r, 10));
+                readerActive = false;
+                throw new Error('Bootloader timeout. Is BW16 in bootloader mode? (Hold BURN, press RST, release both)');
+                
+            } catch (e) {
+                readerActive = false;
+                throw e;
             }
-            
-            throw new Error('Bootloader not responding - did you press BURN+RST?');
         }
 
         async function xmodemSendFile(data, name) {
@@ -309,9 +319,6 @@
                 reader = port.readable.getReader();
                 writer = port.writable.getWriter();
                 
-                // Start background reader
-                startBackgroundReader();
-                
                 connected = true;
                 log('✓ Connected to BW16', 'success');
                 
@@ -329,24 +336,20 @@
 
             flashBtn.disabled = true;
             updateProgress(0, 'Starting...');
+            readBuffer = []; // Clear any old data
             
             try {
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
                 log('🦇 VAMPIRE DEAUTHER FLASH', 'info');
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
-                log('', 'warning');
-                log('⚠️ DO THIS NOW:', 'warning');
-                log('1. Hold BURN (5 sec)', 'warning');
-                log('2. Press RST (2 sec, while holding BURN)', 'warning');
-                log('3. Release RST, then release BURN', 'warning');
                 log('', 'info');
-                log('Listening for bootloader...', 'info');
-                
-                // Start background reader IMMEDIATELY
-                const bootloaderPromise = waitForBootloader();
+                log('Waiting for bootloader...', 'info');
+                log('(BW16 should already be in bootloader mode)', 'warning');
                 
                 updateProgress(5, 'Waiting for bootloader...');
-                await bootloaderPromise;
+                
+                // Start listening immediately
+                await waitForBootloader();
                 
                 updateProgress(10, 'Loading flash stub...');
                 const stubResp = await fetch('imgtool_flashloader_amebad.bin');
