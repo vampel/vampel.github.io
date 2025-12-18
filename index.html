@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🦇 Vampire Deauther - Complete BW16 Flasher v5.0</title>
+    <title>🦇 Vampire Deauther - Complete BW16 Flasher v6.0</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -79,7 +79,7 @@
 <body>
     <div class="container">
         <h1>🦇 Vampire Deauther</h1>
-        <p class="subtitle">Complete BW16 Web Flasher v5.0 - Writes ALL 3 files</p>
+        <p class="subtitle">Complete BW16 Web Flasher v6.0 - Erases OTA Address 2!</p>
 
         <div class="info-box">
             <h3>📋 REQUIRED FILES</h3>
@@ -107,9 +107,10 @@
             <h2 style="margin-bottom: 20px;">📡 Complete Firmware Flasher</h2>
             
             <div id="statusBox">
-                <div style="color: #58a6ff;">[INFO] Complete BW16 Web Flasher v5.0</div>
-                <div style="color: #3fb950;">[INFO] Writes ALL 3 files: bootloaders + firmware</div>
-                <div style="color: #d29922;">[INFO] ERASE fixed - only sends 1 byte for size</div>
+                <div style="color: #58a6ff;">[INFO] Complete BW16 Web Flasher v6.0</div>
+                <div style="color: #f85149;">[INFO] CRITICAL FIX: Erases OTA Address 2 (0x08106000)</div>
+                <div style="color: #3fb950;">[INFO] Bootloader checks OTA2 FIRST - must be clean!</div>
+                <div style="color: #58a6ff;">[INFO] Writes ALL 3 files: bootloaders + firmware</div>
                 <div style="color: #58a6ff;">[INFO] Ready. Click "Connect BW16" to begin.</div>
             </div>
 
@@ -365,6 +366,9 @@
                     { name: 'km0_km4_image2.bin', eraseAddr: 0x08006000, writeAddr: 0x006000, desc: 'Firmware' }
                 ];
                 
+                // OTA Address 2 (checked FIRST by bootloader) - must erase to avoid boot failure
+                const otaAddress2 = { eraseAddr: 0x08106000, size: 696320, desc: 'OTA Address 2' };
+                
                 const fileData = [];
                 for (let i = 0; i < files.length; i++) {
                     const resp = await fetch(files[i].name);
@@ -378,6 +382,8 @@
                 updateProgress(45, 'Erasing flash...');
                 
                 log('Erasing flash blocks (this may take 30-60 seconds)...', 'warning');
+                
+                // Erase the 3 main areas
                 for (let i = 0; i < files.length; i++) {
                     const sizeInBlocks = Math.floor((fileData[i].length + 4095) / 4096);
                     log(`Erase 0x${files[i].eraseAddr.toString(16).toUpperCase()} (${sizeInBlocks} blocks)`, 'info');
@@ -397,6 +403,21 @@
                     
                     await sendCommand(CMD_ERASE, eraseCmd, 120000);
                 }
+                
+                // CRITICAL: Erase OTA Address 2 (0x08106000) - bootloader checks this FIRST!
+                log('⚠️ CRITICAL: Erasing OTA Address 2 (checked first by bootloader)...', 'warning');
+                const ota2SizeInBlocks = Math.floor((otaAddress2.size + 4095) / 4096);
+                log(`Erase 0x${otaAddress2.eraseAddr.toString(16).toUpperCase()} (${ota2SizeInBlocks} blocks)`, 'info');
+                
+                const ota2EraseCmd = [];
+                ota2EraseCmd.push((otaAddress2.eraseAddr) & 0xFF);
+                ota2EraseCmd.push((otaAddress2.eraseAddr >> 8) & 0xFF);
+                ota2EraseCmd.push((otaAddress2.eraseAddr >> 16) & 0xFF);
+                ota2EraseCmd.push((otaAddress2.eraseAddr >> 24) & 0xFF);
+                ota2EraseCmd.push(ota2SizeInBlocks & 0xFF);
+                
+                await sendCommand(CMD_ERASE, ota2EraseCmd, 120000);
+                
                 log('✓ Erase complete', 'success');
                 
                 updateProgress(60, 'Waiting for flashloader...');
