@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🦇 Vampire Deauther - Firmware Only Flasher v4.2</title>
+    <title>🦇 Vampire Deauther - Complete BW16 Flasher v5.0</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -79,17 +79,18 @@
 <body>
     <div class="container">
         <h1>🦇 Vampire Deauther</h1>
-        <p class="subtitle">Firmware-Only Web Flasher v4.2 (VERIFY disabled for testing)</p>
+        <p class="subtitle">Complete BW16 Web Flasher v5.0 - Writes ALL 3 files</p>
 
         <div class="info-box">
-            <h3>📋 REQUIREMENTS - FIRST TIME</h3>
-            <p><strong>Before using this flasher:</strong></p>
+            <h3>📋 REQUIRED FILES</h3>
+            <p>Place these 4 files in the SAME folder as this HTML:</p>
             <ol style="margin-left: 20px; margin-top: 10px; line-height: 2;">
-                <li><strong>Flash ONCE with Arduino IDE</strong> (any sketch)</li>
-                <li>This installs the bootloaders correctly</li>
-                <li><strong>Then</strong> you can use this web flasher to update firmware only</li>
+                <li><strong>imgtool_flashloader_amebad.bin</strong> (4688 bytes)</li>
+                <li><strong>km0_boot_all.bin</strong> (~4.5 KB - KM0 bootloader)</li>
+                <li><strong>km4_boot_all.bin</strong> (~4.5 KB - KM4 bootloader)</li>
+                <li><strong>km0_km4_image2.bin</strong> (~680 KB - YOUR firmware)</li>
             </ol>
-            <p style="margin-top: 10px; color: #d29922;">⚠️ This flasher only updates km0_km4_image2.bin, not bootloaders!</p>
+            <p style="margin-top: 10px; color: #d29922;">⚠️ Find these in: Arduino15\packages\realtek\tools\ameba_d_tools\1.1.3\</p>
         </div>
 
         <div class="warning-box">
@@ -98,18 +99,17 @@
                 <li><strong>Hold BURN</strong> button (~5 sec)</li>
                 <li>While holding BURN, <strong>press RST</strong> (~2 sec)</li>
                 <li><strong>Release RST</strong> first, then release BURN</li>
-                <li>Click "Flash Firmware" below ⬇️</li>
+                <li>Click "Flash Complete Firmware" below ⬇️</li>
             </ol>
         </div>
 
         <div class="flasher-box">
-            <h2 style="margin-bottom: 20px;">📡 Firmware-Only Flasher</h2>
+            <h2 style="margin-bottom: 20px;">📡 Complete Firmware Flasher</h2>
             
             <div id="statusBox">
-                <div style="color: #58a6ff;">[INFO] Firmware-Only Web Flasher v4.2</div>
-                <div style="color: #d29922;">[INFO] VERIFY disabled (testing if write works without verify)</div>
-                <div style="color: #3fb950;">[INFO] Only writes km0_km4_image2.bin to 0x08006000</div>
-                <div style="color: #d29922;">[INFO] Bootloaders NOT touched - must be installed via Arduino IDE first</div>
+                <div style="color: #58a6ff;">[INFO] Complete BW16 Web Flasher v5.0</div>
+                <div style="color: #3fb950;">[INFO] Writes ALL 3 files: bootloaders + firmware</div>
+                <div style="color: #d29922;">[INFO] ERASE fixed - only sends 1 byte for size</div>
                 <div style="color: #58a6ff;">[INFO] Ready. Click "Connect BW16" to begin.</div>
             </div>
 
@@ -119,7 +119,7 @@
 
             <button id="connectBtn">Connect BW16</button>
             <button id="disconnectBtn" disabled style="background: #6e7681;">Disconnect</button>
-            <button id="flashBtn" disabled>Flash Firmware (Firmware Only)</button>
+            <button id="flashBtn" disabled>Flash Complete Firmware (3 files)</button>
         </div>
     </div>
 
@@ -314,7 +314,7 @@
         async function flashFirmware() {
             try {
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
-                log('🦇 FIRMWARE-ONLY FLASH START', 'info');
+                log('🦇 COMPLETE FLASH START', 'info');
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
                 
                 startReaderLoop();
@@ -344,7 +344,7 @@
                 log(`Uploading flashloader (${flashloaderData.length} bytes) to RAM 0x082000...`, 'info');
                 await writeBlock(0x082000, flashloaderData, false);
                 
-                updateProgress(35, 'Activating flashloader...');
+                updateProgress(30, 'Activating flashloader...');
                 
                 log('Resetting flashloader...', 'info');
                 await sendCommand(CMD_RESET);
@@ -352,69 +352,73 @@
                 await new Promise(r => setTimeout(r, 500));
                 await waitForNAKs(2);
                 
-                updateProgress(45, 'Entering flash mode...');
+                updateProgress(35, 'Entering flash mode...');
                 
                 log('Entering flash programming mode...', 'info');
                 await sendCommand(CMD_FLASH_MODE, [0x01, 0x01, 0x00]);
                 
-                updateProgress(50, 'Loading firmware...');
+                updateProgress(40, 'Loading files...');
                 
-                const firmwareResp = await fetch('km0_km4_image2.bin');
-                if (!firmwareResp.ok) throw new Error('Firmware file not found. Please upload km0_km4_image2.bin');
-                const firmwareData = new Uint8Array(await firmwareResp.arrayBuffer());
-                log(`✓ Loaded km0_km4_image2.bin (${firmwareData.length} bytes)`, 'success');
+                const files = [
+                    { name: 'km0_boot_all.bin', eraseAddr: 0x08000000, writeAddr: 0x000000, desc: 'KM0 bootloader' },
+                    { name: 'km4_boot_all.bin', eraseAddr: 0x08004000, writeAddr: 0x004000, desc: 'KM4 bootloader' },
+                    { name: 'km0_km4_image2.bin', eraseAddr: 0x08006000, writeAddr: 0x006000, desc: 'Firmware' }
+                ];
                 
-                updateProgress(55, 'Erasing firmware area...');
+                const fileData = [];
+                for (let i = 0; i < files.length; i++) {
+                    const resp = await fetch(files[i].name);
+                    if (!resp.ok) {
+                        throw new Error(`${files[i].name} not found. Please add this file to the same folder.`);
+                    }
+                    fileData[i] = new Uint8Array(await resp.arrayBuffer());
+                    log(`✓ Loaded ${files[i].name} (${fileData[i].length} bytes)`, 'success');
+                }
                 
-                const sizeInBlocks = Math.ceil(firmwareData.length / 4096);
-                log(`Erasing firmware area 0x08006000 (${sizeInBlocks} blocks)...`, 'warning');
+                updateProgress(45, 'Erasing flash...');
                 
-                const eraseCmd = [];
-                const addr = 0x08006000;
-                eraseCmd.push((addr) & 0xFF);
-                eraseCmd.push((addr >> 8) & 0xFF);
-                eraseCmd.push((addr >> 16) & 0xFF);
-                eraseCmd.push((addr >> 24) & 0xFF);
-                
-                eraseCmd.push((sizeInBlocks) & 0xFF);
-                eraseCmd.push((sizeInBlocks >> 8) & 0xFF);
-                eraseCmd.push((sizeInBlocks >> 16) & 0xFF);
-                eraseCmd.push((sizeInBlocks >> 24) & 0xFF);
-                
-                await sendCommand(CMD_ERASE, eraseCmd, 120000);
+                log('Erasing flash blocks (this may take 30-60 seconds)...', 'warning');
+                for (let i = 0; i < files.length; i++) {
+                    const sizeInBlocks = Math.floor((fileData[i].length + 4095) / 4096);
+                    log(`Erase 0x${files[i].eraseAddr.toString(16).toUpperCase()} (${sizeInBlocks} blocks)`, 'info');
+                    
+                    // CMD_ERASE: [0x17][addr:4bytes][size:1byte] = 6 bytes total
+                    const eraseCmd = [];
+                    
+                    // Address (little-endian)
+                    const addr = files[i].eraseAddr;
+                    eraseCmd.push((addr) & 0xFF);
+                    eraseCmd.push((addr >> 8) & 0xFF);
+                    eraseCmd.push((addr >> 16) & 0xFF);
+                    eraseCmd.push((addr >> 24) & 0xFF);
+                    
+                    // Size in 4KB blocks (SOLO 1 BYTE!)
+                    eraseCmd.push(sizeInBlocks & 0xFF);
+                    
+                    await sendCommand(CMD_ERASE, eraseCmd, 120000);
+                }
                 log('✓ Erase complete', 'success');
                 
-                updateProgress(65, 'Waiting for flashloader...');
+                updateProgress(60, 'Waiting for flashloader...');
                 
                 log('Waiting for flashloader to be ready...', 'info');
                 await new Promise(r => setTimeout(r, 1000));
                 
                 await waitForByte(NAK, 10000);
                 
-                updateProgress(70, 'Syncing...');
+                updateProgress(65, 'Syncing...');
                 
                 log('Sending SYNC after erase...', 'info');
                 await sendCommand(CMD_SYNC, [], 30000);
                 
                 await waitForByte(NAK, 5000);
                 
-                updateProgress(75, 'Writing firmware...');
+                updateProgress(70, 'Writing to flash...');
                 
-                log(`Writing firmware (${firmwareData.length} bytes) to flash 0x006000...`, 'info');
-                await writeBlock(0x006000, firmwareData, true);
-                
-                updateProgress(96, 'Firmware written...');
-                
-                // VERIFY: Comentado temporalmente para probar
-                log('⚠️ VERIFY skipped (testing mode)', 'warning');
-                log('If firmware works, verify is not critical', 'info');
-                
-                /*
-                // VERIFY: Calculate checksum
-                log('Calculating firmware checksum...', 'info');
-                let checksum = 0;
-                ... [código de verify comentado]
-                */
+                for (let i = 0; i < files.length; i++) {
+                    log(`Writing ${files[i].desc} to 0x${files[i].writeAddr.toString(16).toUpperCase().padStart(6, '0')}...`, 'info');
+                    await writeBlock(files[i].writeAddr, fileData[i], i === 2);
+                }
                 
                 updateProgress(98, 'Finishing...');
                 
@@ -424,7 +428,7 @@
                 updateProgress(100, '✓ Complete!');
                 
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'success');
-                log('✅ FIRMWARE FLASH COMPLETE!', 'success');
+                log('✅ FLASH COMPLETE!', 'success');
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'success');
                 log('You can now disconnect and reset your BW16', 'info');
                 
