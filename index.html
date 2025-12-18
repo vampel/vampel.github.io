@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🦇 Vampire Deauther - Complete BW16 Flasher v6.0</title>
+    <title>🦇 Vampire Deauther - Complete BW16 Flasher v7.0</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -79,7 +79,7 @@
 <body>
     <div class="container">
         <h1>🦇 Vampire Deauther</h1>
-        <p class="subtitle">Complete BW16 Web Flasher v6.0 - Erases OTA Address 2!</p>
+        <p class="subtitle">Complete BW16 Web Flasher v7.0 - WITH VERIFY!</p>
 
         <div class="info-box">
             <h3>📋 REQUIRED FILES</h3>
@@ -107,10 +107,10 @@
             <h2 style="margin-bottom: 20px;">📡 Complete Firmware Flasher</h2>
             
             <div id="statusBox">
-                <div style="color: #58a6ff;">[INFO] Complete BW16 Web Flasher v6.0</div>
-                <div style="color: #f85149;">[INFO] CRITICAL FIX: Erases OTA Address 2 (0x08106000)</div>
-                <div style="color: #3fb950;">[INFO] Bootloader checks OTA2 FIRST - must be clean!</div>
-                <div style="color: #58a6ff;">[INFO] Writes ALL 3 files: bootloaders + firmware</div>
+                <div style="color: #58a6ff;">[INFO] Complete BW16 Web Flasher v7.0</div>
+                <div style="color: #f85149;">[INFO] CRITICAL: VERIFY checksums after each write!</div>
+                <div style="color: #3fb950;">[INFO] Detects write errors at 115200 baud</div>
+                <div style="color: #d29922;">[INFO] Erases OTA Address 2 (bootloader checks first)</div>
                 <div style="color: #58a6ff;">[INFO] Ready. Click "Connect BW16" to begin.</div>
             </div>
 
@@ -312,6 +312,88 @@
             log(`✓ Block written successfully`, 'success');
         }
 
+        async function verifyChecksum(addr, data) {
+            // Calculate local checksum (32-bit word sum)
+            let checksum = 0;
+            const chunks = Math.floor(data.length / 4);
+            
+            for (let i = 0; i < chunks; i++) {
+                const word = (data[i*4]) | 
+                            (data[i*4+1] << 8) | 
+                            (data[i*4+2] << 16) | 
+                            (data[i*4+3] << 24);
+                checksum = (checksum + word) >>> 0;
+            }
+            
+            // Handle remaining bytes
+            const remainder = data.length % 4;
+            if (remainder > 0) {
+                let word = 0;
+                for (let i = 0; i < remainder; i++) {
+                    word |= data[chunks * 4 + i] << (i * 8);
+                }
+                checksum = (checksum + word) >>> 0;
+            }
+            
+            // Send VERIFY command (0x27)
+            const CMD_VERIFY = 0x27;
+            await waitForByte(NAK, 5000);
+            
+            const verifyCmd = [];
+            verifyCmd.push((addr) & 0xFF);
+            verifyCmd.push((addr >> 8) & 0xFF);
+            verifyCmd.push((addr >> 16) & 0xFF);
+            verifyCmd.push((addr >> 24) & 0xFF);
+            verifyCmd.push((data.length) & 0xFF);
+            verifyCmd.push((data.length >> 8) & 0xFF);
+            verifyCmd.push((data.length >> 16) & 0xFF);
+            verifyCmd.push((data.length >> 24) & 0xFF);
+            
+            await writeBytes([CMD_VERIFY, ...verifyCmd]);
+            
+            // Wait for response: [0x15, 0x27, checksum:4bytes]
+            await waitForByte(NAK, 5000);
+            
+            // Wait for 0x27 marker
+            const start = Date.now();
+            while (Date.now() - start < 10000) {
+                if (readBuffer.length > 0) {
+                    const byte = readBuffer.shift();
+                    if (byte === 0x27) {
+                        // Read 4 bytes of checksum (little-endian)
+                        const checksumBytes = [];
+                        for (let i = 0; i < 4; i++) {
+                            const start2 = Date.now();
+                            while (Date.now() - start2 < 2000) {
+                                if (readBuffer.length > 0) {
+                                    checksumBytes.push(readBuffer.shift());
+                                    break;
+                                }
+                                await new Promise(r => setTimeout(r, 10));
+                            }
+                        }
+                        
+                        if (checksumBytes.length === 4) {
+                            const flashChecksum = (checksumBytes[0]) | 
+                                                 (checksumBytes[1] << 8) | 
+                                                 (checksumBytes[2] << 16) | 
+                                                 (checksumBytes[3] << 24);
+                            
+                            return {
+                                success: checksum === flashChecksum,
+                                local: checksum,
+                                flash: flashChecksum
+                            };
+                        }
+                        break;
+                    }
+                }
+                await new Promise(r => setTimeout(r, 10));
+            }
+            
+            return { success: false, local: checksum, flash: 0 };
+        }
+
         async function flashFirmware() {
             try {
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
@@ -439,6 +521,14 @@
                 for (let i = 0; i < files.length; i++) {
                     log(`Writing ${files[i].desc} to 0x${files[i].writeAddr.toString(16).toUpperCase().padStart(6, '0')}...`, 'info');
                     await writeBlock(files[i].writeAddr, fileData[i], i === 2);
+                    
+                    // VERIFY checksum after write
+                    log(`Verifying ${files[i].desc} checksum...`, 'info');
+                    const verify = await verifyChecksum(files[i].writeAddr, fileData[i]);
+                    if (!verify.success) {
+                        throw new Error(`Checksum mismatch on ${files[i].desc}! Local: 0x${verify.local.toString(16)}, Flash: 0x${verify.flash.toString(16)}`);
+                    }
+                    log(`✓ ${files[i].desc} verified OK`, 'success');
                 }
                 
                 updateProgress(98, 'Finishing...');
