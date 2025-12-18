@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🦇 Vampire Deauther - BW16 Web Flasher v3.4</title>
+    <title>🦇 Vampire Deauther - BW16 Web Flasher v3.5</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -88,8 +88,8 @@
             <h2 style="margin-bottom: 20px;">📡 Web Flasher</h2>
             
             <div id="statusBox">
-                <div style="color: #58a6ff;">[INFO] Vampire Deauther Web Flasher v3.4</div>
-                <div style="color: #d29922;">[INFO] Strategy: Erase firmware area only (0x08006000)</div>
+                <div style="color: #58a6ff;">[INFO] Vampire Deauther Web Flasher v3.5</div>
+                <div style="color: #d29922;">[INFO] Strategy: Erase firmware only + extended timeouts</div>
                 <div style="color: #3fb950;">[INFO] Bootloaders written without erase (may need Arduino IDE first time)</div>
                 <div style="color: #58a6ff;">[INFO] Ready. Click "Connect BW16" to begin.</div>
             </div>
@@ -424,13 +424,25 @@
                 await sendCommand(CMD_ERASE, eraseCmd, 120000); // 2 minutos
                 log('✓ Erase complete', 'success');
                 
-                updateProgress(60, 'Writing to flash...');
+                updateProgress(60, 'Waiting for flashloader...');
+                
+                // Dar tiempo al flashloader para procesar el erase
+                log('Waiting for flashloader to be ready...', 'info');
+                await new Promise(r => setTimeout(r, 1000)); // 1 segundo
                 
                 // Esperar NAK después de erase
+                await waitForByte(NAK, 10000); // 10 segundos timeout
+                
+                updateProgress(65, 'Syncing...');
+                
+                // Sync antes de escribir (con timeout largo)
+                log('Sending SYNC after erase...', 'info');
+                await sendCommand(CMD_SYNC, [], 30000); // 30 segundos timeout
+                
+                // Esperar otro NAK
                 await waitForByte(NAK, 5000);
                 
-                // Sync antes de escribir
-                await sendCommand(CMD_SYNC);
+                updateProgress(70, 'Writing to flash...');
                 
                 // Escribir cada archivo
                 for (let i = 0; i < files.length; i++) {
