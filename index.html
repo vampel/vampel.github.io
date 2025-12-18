@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🦇 Vampire Deauther - Complete BW16 Flasher v7.0</title>
+    <title>🦇 Vampire Deauther - Complete BW16 Flasher v8.0</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -79,7 +79,7 @@
 <body>
     <div class="container">
         <h1>🦇 Vampire Deauther</h1>
-        <p class="subtitle">Complete BW16 Web Flasher v7.0 - WITH VERIFY!</p>
+        <p class="subtitle">Complete BW16 Web Flasher v8.0 - Auto-reset via DTR/RTS!</p>
 
         <div class="info-box">
             <h3>📋 REQUIRED FILES</h3>
@@ -107,10 +107,10 @@
             <h2 style="margin-bottom: 20px;">📡 Complete Firmware Flasher</h2>
             
             <div id="statusBox">
-                <div style="color: #58a6ff;">[INFO] Complete BW16 Web Flasher v7.0</div>
-                <div style="color: #f85149;">[INFO] CRITICAL: VERIFY checksums after each write!</div>
-                <div style="color: #3fb950;">[INFO] Detects write errors at 115200 baud</div>
-                <div style="color: #d29922;">[INFO] Erases OTA Address 2 (bootloader checks first)</div>
+                <div style="color: #58a6ff;">[INFO] Complete BW16 Web Flasher v8.0</div>
+                <div style="color: #f85149;">[INFO] CRITICAL: Hardware reset via DTR/RTS!</div>
+                <div style="color: #3fb950;">[INFO] Auto-reset like Arduino IDE</div>
+                <div style="color: #3fb950;">[INFO] VERIFY checksums after write</div>
                 <div style="color: #58a6ff;">[INFO] Ready. Click "Connect BW16" to begin.</div>
             </div>
 
@@ -535,6 +535,13 @@
                 
                 log('Final reset...', 'info');
                 await sendCommand(CMD_RESET);
+                
+                // Hardware reset usando DTR/RTS (como Arduino IDE)
+                log('Performing hardware reset via DTR/RTS...', 'info');
+                await port.setSignals({ dataTerminalReady: false, requestToSend: false });
+                await new Promise(r => setTimeout(r, 100));
+                await port.setSignals({ dataTerminalReady: true, requestToSend: true });
+                await new Promise(r => setTimeout(r, 500));
                 
                 updateProgress(100, '✓ Complete!');
                 
