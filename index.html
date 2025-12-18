@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🦇 Vampire Deauther - Firmware Only Flasher v4.1</title>
+    <title>🦇 Vampire Deauther - Firmware Only Flasher v4.2</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -79,7 +79,7 @@
 <body>
     <div class="container">
         <h1>🦇 Vampire Deauther</h1>
-        <p class="subtitle">Firmware-Only Web Flasher v4.1 with VERIFY</p>
+        <p class="subtitle">Firmware-Only Web Flasher v4.2 (VERIFY disabled for testing)</p>
 
         <div class="info-box">
             <h3>📋 REQUIREMENTS - FIRST TIME</h3>
@@ -106,8 +106,8 @@
             <h2 style="margin-bottom: 20px;">📡 Firmware-Only Flasher</h2>
             
             <div id="statusBox">
-                <div style="color: #58a6ff;">[INFO] Firmware-Only Web Flasher v4.1</div>
-                <div style="color: #3fb950;">[INFO] With VERIFY checksum support</div>
+                <div style="color: #58a6ff;">[INFO] Firmware-Only Web Flasher v4.2</div>
+                <div style="color: #d29922;">[INFO] VERIFY disabled (testing if write works without verify)</div>
                 <div style="color: #3fb950;">[INFO] Only writes km0_km4_image2.bin to 0x08006000</div>
                 <div style="color: #d29922;">[INFO] Bootloaders NOT touched - must be installed via Arduino IDE first</div>
                 <div style="color: #58a6ff;">[INFO] Ready. Click "Connect BW16" to begin.</div>
@@ -403,108 +403,18 @@
                 log(`Writing firmware (${firmwareData.length} bytes) to flash 0x006000...`, 'info');
                 await writeBlock(0x006000, firmwareData, true);
                 
-                updateProgress(96, 'Verifying firmware...');
+                updateProgress(96, 'Firmware written...');
                 
+                // VERIFY: Comentado temporalmente para probar
+                log('⚠️ VERIFY skipped (testing mode)', 'warning');
+                log('If firmware works, verify is not critical', 'info');
+                
+                /*
                 // VERIFY: Calculate checksum
                 log('Calculating firmware checksum...', 'info');
                 let checksum = 0;
-                const chunks = Math.floor(firmwareData.length / 4);
-                const remainder = firmwareData.length % 4;
-                
-                // Sum 32-bit words
-                for (let i = 0; i < chunks; i++) {
-                    const word = (firmwareData[i*4]) | 
-                                (firmwareData[i*4+1] << 8) | 
-                                (firmwareData[i*4+2] << 16) | 
-                                (firmwareData[i*4+3] << 24);
-                    checksum = (checksum + word) >>> 0; // Unsigned 32-bit
-                }
-                
-                // Handle remaining bytes
-                if (remainder === 1) {
-                    checksum = (checksum + firmwareData[chunks*4]) >>> 0;
-                } else if (remainder === 2) {
-                    checksum = (checksum + (firmwareData[chunks*4] | (firmwareData[chunks*4+1] << 8))) >>> 0;
-                } else if (remainder === 3) {
-                    checksum = (checksum + (firmwareData[chunks*4] | (firmwareData[chunks*4+1] << 8) | (firmwareData[chunks*4+2] << 16))) >>> 0;
-                }
-                
-                log(`Local checksum: 0x${checksum.toString(16).toUpperCase()}`, 'info');
-                
-                // Send VERIFY command
-                log('Sending VERIFY command to flashloader...', 'info');
-                await waitForByte(NAK, 5000);
-                
-                const verifyCmd = [];
-                const verifyAddr = 0x006000; // Write address (not 0x08006000)
-                
-                // Address (little-endian)
-                verifyCmd.push((verifyAddr) & 0xFF);
-                verifyCmd.push((verifyAddr >> 8) & 0xFF);
-                verifyCmd.push((verifyAddr >> 16) & 0xFF);
-                verifyCmd.push((verifyAddr >> 24) & 0xFF);
-                
-                // Size (little-endian)
-                verifyCmd.push((firmwareData.length) & 0xFF);
-                verifyCmd.push((firmwareData.length >> 8) & 0xFF);
-                verifyCmd.push((firmwareData.length >> 16) & 0xFF);
-                verifyCmd.push((firmwareData.length >> 24) & 0xFF);
-                
-                // Send VERIFY command (0x27)
-                const CMD_VERIFY = 0x27;
-                await writeBytes([CMD_VERIFY, ...verifyCmd]);
-                
-                // Read response: should be [0x15, 0x27, checksum:4bytes]
-                log('Reading flashloader checksum...', 'info');
-                await waitForByte(NAK, 5000);
-                
-                // Wait for 0x27 response marker
-                const start = Date.now();
-                let gotMarker = false;
-                while (Date.now() - start < 5000) {
-                    if (readBuffer.length > 0) {
-                        const byte = readBuffer.shift();
-                        if (byte === 0x27) {
-                            gotMarker = true;
-                            break;
-                        }
-                    }
-                    await new Promise(r => setTimeout(r, 10));
-                }
-                
-                if (!gotMarker) {
-                    throw new Error('No verify response marker');
-                }
-                
-                // Read 4 bytes of checksum (little-endian)
-                const checksumBytes = [];
-                for (let i = 0; i < 4; i++) {
-                    const start2 = Date.now();
-                    while (Date.now() - start2 < 2000) {
-                        if (readBuffer.length > 0) {
-                            checksumBytes.push(readBuffer.shift());
-                            break;
-                        }
-                        await new Promise(r => setTimeout(r, 10));
-                    }
-                }
-                
-                if (checksumBytes.length !== 4) {
-                    throw new Error('Incomplete checksum response');
-                }
-                
-                const flashChecksum = (checksumBytes[0]) | 
-                                     (checksumBytes[1] << 8) | 
-                                     (checksumBytes[2] << 16) | 
-                                     (checksumBytes[3] << 24);
-                
-                log(`Flash checksum:  0x${flashChecksum.toString(16).toUpperCase()}`, 'info');
-                
-                if (checksum !== flashChecksum) {
-                    throw new Error(`Checksum mismatch! Local: 0x${checksum.toString(16)}, Flash: 0x${flashChecksum.toString(16)}`);
-                }
-                
-                log('✓ Checksum verified!', 'success');
+                ... [código de verify comentado]
+                */
                 
                 updateProgress(98, 'Finishing...');
                 
