@@ -263,19 +263,37 @@ async function readBytes(count, timeoutMs = TIMEOUT_MS) {
 async function readUntilACK(timeoutMs = TIMEOUT_MS) {
     const startTime = Date.now();
     const buffer = [];
+    let byteCount = 0;
     
     while (Date.now() - startTime < timeoutMs) {
-        const { value, done } = await reader.read();
-        if (done) throw new Error('Stream closed');
-        
-        for (const byte of value) {
-            buffer.push(byte);
-            if (byte === ACK) {
-                return true;
+        try {
+            const { value, done } = await reader.read();
+            if (done) throw new Error('Stream closed');
+            
+            for (const byte of value) {
+                buffer.push(byte);
+                byteCount++;
+                if (byte === ACK) {
+                    return true;
+                }
+                // Log NAKs
+                if (byte === NAK) {
+                    log(`[DEBUG] Received NAK (byte ${byteCount})`, '#d29922');
+                }
             }
+            
+            // Log every 100 bytes received without ACK
+            if (byteCount > 0 && byteCount % 100 === 0) {
+                log(`[DEBUG] Waiting for ACK... (${byteCount} bytes received)`, '#8b949e');
+            }
+        } catch (e) {
+            // Continue waiting
         }
     }
     
+    // Show what we got if timeout
+    const hexBytes = buffer.slice(0, 20).map(b => b.toString(16).padStart(2, '0')).join(' ');
+    log(`[DEBUG] Timeout! Got ${buffer.length} bytes: ${hexBytes}...`, '#f85149');
     throw new Error(`Timeout waiting for ACK (got ${buffer.length} bytes)`);
 }
 
@@ -288,7 +306,7 @@ async function sendSync() {
     await readUntilACK();
 }
 
-async function flushBuffer(timeoutMs = 500) {
+async function flushBuffer(timeoutMs = 1000) {
     const startTime = Date.now();
     let totalBytes = 0;
     
@@ -472,8 +490,9 @@ async function performFlash() {
         log('', '#c9d1d9');
         log('─── PHASE 2: FLASHLOADER SYNC @ 115200 ───', '#58a6ff');
         
-        await delay(1000);
-        await flushBuffer();
+        await delay(2000); // Increased from 1000ms - flashloader needs time to start
+        const flushed2 = await flushBuffer();
+        log(`[INFO] Flushed ${flushed2} bytes after reset`, '#c9d1d9');
         
         log('[INFO] Sending SYNC to flashloader...', '#c9d1d9');
         await sendSync();
