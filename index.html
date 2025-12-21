@@ -46,6 +46,18 @@
         .warning-box h3 { color: #f85149; margin-bottom: 10px; }
         .info-box h3 { color: #58a6ff; margin-bottom: 10px; }
         .success-box h3 { color: #3fb950; margin-bottom: 10px; }
+        .downloads-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .downloads-section h3 { 
+            color: #58a6ff; 
+            margin-bottom: 15px; 
+        }
         button {
             background: #238636;
             color: white;
@@ -93,60 +105,21 @@
             font-weight: bold;
             transition: width 0.3s;
         }
-        .downloads-section {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            padding: 20px;
-            margin-top: 30px;
-            text-align: center;
-        }
-        .downloads-section h3 { 
-            color: #58a6ff; 
-            margin-bottom: 15px; 
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🦇 Vampire Deauther</h1>
-        <p class="subtitle">Complete BW16 Web Flasher v31.1 - Single Blob Flash</p>
+        <p class="subtitle">Complete BW16 Web Flasher v31.1</p>
 
-        <div class="success-box">
-            <h3>🔥 v31.1 - Single Blob Flash!</h3>
-            <ul style="margin-left: 20px; margin-top: 10px; line-height: 2;">
-                <li><strong>✅ Auto-Load Firmware:</strong> BW16_vampel.bin loaded from GitHub!</li>
-                <li><strong>✅ Single 2MB Flash:</strong> Everything in one operation</li>
-                <li><strong>✅ Proven Method:</strong> Same as SharpRTL872xTool</li>
-                <li><strong>✅ No IMG2 Invalid:</strong> Correct flash layout confirmed</li>
-                <li><strong>✅ 1.5Mbaud Flash:</strong> Fast and reliable</li>
-            </ul>
-            <p style="margin-top: 10px; color: #3fb950;">🎯 Flash addresses confirmed from Arduino IDE dumps!</p>
-        </div>
-
-        <div class="info-box">
-            <h3>📋 Flash Layout (2MB)</h3>
-            <pre style="color: #c9d1d9; margin-top: 10px; line-height: 1.8;">
-0x00000000 - KM4 Bootloader  (8KB)
-0x00002000 - KM0 Bootloader  (8KB)
-0x00004000 - Reserved        (8KB)
-0x00006000 - Your Firmware   (680KB)
-0x000B0000 - Empty           (1344KB)
-            </pre>
-            <p style="margin-top: 10px; color: #d29922;">📂 Firmware auto-loaded: BW16_vampel.bin (2MB blob)</p>
-        </div>
-
-        <div class="warning-box">
-            <h3>⚡ Enter Bootloader Mode (IMPORTANT!)</h3>
-            <p><strong>Correct sequence to see "#Flash Download Start":</strong></p>
-            <ol style="margin-left: 20px; margin-top: 10px; line-height: 2;">
-                <li><strong>Hold BURN</strong> button (keep holding ~5 seconds)</li>
-                <li>While holding BURN, <strong>press RST</strong> button</li>
-                <li><strong>Release RST</strong> first</li>
-                <li><strong>Then release BURN</strong></li>
-                <li>You should see: <code style="color: #79c0ff;">#Flash Download Start</code></li>
-            </ol>
-            <p style="margin-top: 10px; color: #d29922;">💡 After entering bootloader, click "Flash Complete Firmware" below!</p>
+        <div class="downloads-section">
+            <h3>📥 Downloads</h3>
+            <a href="https://github.com/Vampel/Vampire-Deauther/releases/latest/download/vampire_deauther.fap" class="download-link">
+                📦 Download Flipper FAP
+            </a>
+            <a href="https://github.com/Vampel/Vampire-Deauther" class="download-link" target="_blank">
+                🦇 View on GitHub
+            </a>
         </div>
 
         <div class="flasher-box">
@@ -162,14 +135,17 @@
             <div id="statusBox"></div>
         </div>
 
-        <div class="downloads-section">
-            <h3>📥 Downloads</h3>
-            <a href="https://github.com/Vampel/Vampire-Deauther/releases/latest/download/vampire_deauther.fap" class="download-link">
-                📦 Download Flipper FAP
-            </a>
-            <a href="https://github.com/Vampel/Vampire-Deauther" class="download-link" target="_blank">
-                🦇 View on GitHub
-            </a>
+        <div class="warning-box">
+            <h3>⚡ Enter Bootloader Mode (IMPORTANT!)</h3>
+            <p><strong>Correct sequence to see "#Flash Download Start":</strong></p>
+            <ol style="margin-left: 20px; margin-top: 10px; line-height: 2;">
+                <li><strong>Hold BURN</strong> button (keep holding ~5 seconds)</li>
+                <li>While holding BURN, <strong>press RST</strong> button</li>
+                <li><strong>Release RST</strong> first</li>
+                <li><strong>Then release BURN</strong></li>
+                <li>You should see: <code style="color: #79c0ff;">#Flash Download Start</code></li>
+            </ol>
+            <p style="margin-top: 10px; color: #d29922;">💡 After entering bootloader, click "Flash Complete Firmware" above!</p>
         </div>
     </div>
 
@@ -233,9 +209,9 @@ function hideProgress() {
 
 async function loadFirmwareFromGitHub() {
     try {
-        log('[INFO] Loading BW16_vampel.bin from GitHub...', '#58a6ff');
+        log('[INFO] Loading BW16_vampel.bin...', '#58a6ff');
         
-        const response = await fetch('https://vampel.github.io/Vampire-Deauther/BW16_vampel.bin');
+        const response = await fetch('./BW16_vampel.bin');
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -253,7 +229,7 @@ async function loadFirmwareFromGitHub() {
         
     } catch (error) {
         log(`[ERROR] ❌ Failed to load firmware: ${error.message}`, '#f85149');
-        log('[ERROR] Make sure BW16_vampel.bin exists in the same directory as index.html', '#f85149');
+        log('[ERROR] Make sure BW16_vampel.bin is in the same directory as index.html', '#f85149');
         return false;
     }
 }
@@ -373,11 +349,11 @@ async function writeFlashPacket(sequence, offset, data) {
 // ============================================================================
 
 async function loadFlashloader() {
-    log('[INFO] Loading flashloader from GitHub...', '#58a6ff');
+    log('[INFO] Loading flashloader...', '#58a6ff');
     
-    const response = await fetch('https://vampel.github.io/Vampire-Deauther/imgtool_flashloader_amebad.bin');
+    const response = await fetch('./imgtool_flashloader_amebad.bin');
     if (!response.ok) {
-        throw new Error(`Error downloading flashloader: ${response.status}`);
+        throw new Error(`Error loading flashloader: ${response.status}`);
     }
     
     const flashloader = new Uint8Array(await response.arrayBuffer());
@@ -585,12 +561,16 @@ document.getElementById('connectBtn').addEventListener('click', async () => {
             
             document.getElementById('connectBtn').textContent = 'Disconnect';
             
-            if (firmwareData) {
-                document.getElementById('flashBtn').disabled = false;
-            }
-            
             log(`[INFO] ✅ Connected to BW16 at ${BAUDRATE_INIT} baud`, '#3fb950');
             log('[INFO] Now enter bootloader mode (BURN+RST)', '#d29922');
+            
+            // Enable flash button if firmware is loaded
+            if (firmwareData) {
+                document.getElementById('flashBtn').disabled = false;
+                log('[INFO] Ready to flash!', '#3fb950');
+            } else {
+                log('[WARN] Waiting for firmware to load...', '#d29922');
+            }
         }
         
     } catch (error) {
@@ -620,11 +600,17 @@ document.getElementById('flashBtn').addEventListener('click', async () => {
 
 log('[INFO] Complete BW16 Web Flasher v31.1 FINAL', '#58a6ff');
 log('[INFO] Single blob flash method (2MB)', '#3fb950');
-log('[INFO] Auto-loading firmware from GitHub...', '#c9d1d9');
+log('[INFO] Auto-loading firmware...', '#c9d1d9');
 
 loadFirmwareFromGitHub().then(success => {
     if (success) {
         log('[INFO] Ready to flash! Connect your BW16 to begin.', '#3fb950');
+        
+        // Enable flash button if already connected
+        if (port && reader && writer) {
+            document.getElementById('flashBtn').disabled = false;
+            log('[INFO] Flash button enabled!', '#3fb950');
+        }
     } else {
         log('[ERROR] Failed to load firmware. Cannot proceed.', '#f85149');
     }
