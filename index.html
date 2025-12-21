@@ -521,30 +521,15 @@ async function performFlash() {
         await uploadFlashloaderToRAM(flashloader);
         
         // Flashloader auto-executes and enters XMODEM receive mode
-        log('[INFO] Flashloader running in XMODEM mode (NAKs expected)', '#c9d1d9');
+        log('[INFO] Flashloader running in XMODEM mode @ 115200', '#c9d1d9');
         
-        // Phase 2: Change to 1.5Mbaud
+        // Small delay for flashloader to be ready
+        await delay(300);
+        
+        // Phase 2: Flash firmware at 115200 baud
         log('', '#c9d1d9');
-        log('─── PHASE 2: CHANGE TO 1.5MBAUD ───', '#58a6ff');
-        
-        // Close and reopen at new baudrate
-        await reader.releaseLock();
-        await writer.releaseLock();
-        await port.close();
-        
-        await delay(100);
-        
-        await port.open({ baudRate: BAUDRATE_FLASH });
-        reader = port.readable.getReader();
-        writer = port.writable.getWriter();
-        
-        log(`[INFO] ✓ Port switched to ${BAUDRATE_FLASH} baud`, '#3fb950');
-        await delay(200);
-        
-        // Phase 3: Flash firmware
-        log('', '#c9d1d9');
-        log('─── PHASE 3: FLASH FIRMWARE ───', '#58a6ff');
-        log('[INFO] Flashloader ready in XMODEM mode - sending packets...', '#c9d1d9');
+        log('─── PHASE 2: FLASH FIRMWARE @ 115200 ───', '#58a6ff');
+        log('[INFO] Flashing at 115200 baud (slower but stable)...', '#c9d1d9');
         
         await flashFirmware();
         
