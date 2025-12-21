@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🦇 Vampire Deauther - Complete BW16 Flasher v9.0</title>
+    <title>🦇 Vampire Deauther - BW16 Web Flasher v31.1</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -60,6 +60,17 @@
         }
         button:hover { background: #2ea043; }
         button:disabled { background: #21262d; color: #484f58; cursor: not-allowed; }
+        .download-link {
+            display: inline-block;
+            background: #1f6feb;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            margin: 5px;
+            transition: background 0.2s;
+        }
+        .download-link:hover { background: #388bfd; }
         #statusBox {
             background: #0d1117;
             border: 1px solid #30363d;
@@ -82,49 +93,67 @@
             font-weight: bold;
             transition: width 0.3s;
         }
+        .downloads-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: center;
+        }
+        .downloads-section h3 { 
+            color: #58a6ff; 
+            margin-bottom: 15px; 
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🦇 Vampire Deauther</h1>
-        <p class="subtitle">Complete BW16 Web Flasher v9.0 - 1.5Mbaud + 2MB Padding!</p>
+        <p class="subtitle">Complete BW16 Web Flasher v31.1 - Single Blob Flash</p>
 
         <div class="success-box">
-            <h3>🔥 v9.0 CRITICAL FIXES</h3>
+            <h3>🔥 v31.1 - Single Blob Flash!</h3>
             <ul style="margin-left: 20px; margin-top: 10px; line-height: 2;">
-                <li><strong>✅ Baudrate: 1,500,000</strong> (same as Arduino IDE)</li>
-                <li><strong>✅ 2MB Padding:</strong> Firmware padded with 0xFF to 2MB</li>
-                <li><strong>✅ DTR/RTS Reset:</strong> Hardware reset after flash</li>
-                <li><strong>✅ OTA2 Erase:</strong> Clears backup firmware area</li>
+                <li><strong>✅ Auto-Load Firmware:</strong> BW16_vampel.bin loaded from GitHub!</li>
+                <li><strong>✅ Single 2MB Flash:</strong> Everything in one operation</li>
+                <li><strong>✅ Proven Method:</strong> Same as SharpRTL872xTool</li>
+                <li><strong>✅ No IMG2 Invalid:</strong> Correct flash layout confirmed</li>
+                <li><strong>✅ 1.5Mbaud Flash:</strong> Fast and reliable</li>
             </ul>
-            <p style="margin-top: 10px; color: #3fb950;">🎯 This matches Arduino IDE behavior exactly!</p>
+            <p style="margin-top: 10px; color: #3fb950;">🎯 Flash addresses confirmed from Arduino IDE dumps!</p>
         </div>
 
         <div class="info-box">
-            <h3>📋 REQUIRED FILES</h3>
-            <p>Place these 4 files in the SAME folder as this HTML:</p>
-            <ol style="margin-left: 20px; margin-top: 10px; line-height: 2;">
-                <li><strong>imgtool_flashloader_amebad.bin</strong> (4688 bytes)</li>
-                <li><strong>km0_boot_all.bin</strong> (~4.5 KB - KM0 bootloader)</li>
-                <li><strong>km4_boot_all.bin</strong> (~4.5 KB - KM4 bootloader)</li>
-                <li><strong>km0_km4_image2.bin</strong> (~680 KB - YOUR firmware)</li>
-            </ol>
-            <p style="margin-top: 10px; color: #d29922;">⚠️ Find these in: Arduino15\packages\realtek\tools\ameba_d_tools\1.1.3\</p>
+            <h3>📋 Flash Layout (2MB)</h3>
+            <pre style="color: #c9d1d9; margin-top: 10px; line-height: 1.8;">
+0x00000000 - KM4 Bootloader  (8KB)
+0x00002000 - KM0 Bootloader  (8KB)
+0x00004000 - Reserved        (8KB)
+0x00006000 - Your Firmware   (680KB)
+0x000B0000 - Empty           (1344KB)
+            </pre>
+            <p style="margin-top: 10px; color: #d29922;">📂 Firmware auto-loaded: BW16_vampel.bin (2MB blob)</p>
         </div>
 
         <div class="warning-box">
-            <h3>⚡ Enter Bootloader Mode</h3>
+            <h3>⚡ Enter Bootloader Mode (IMPORTANT!)</h3>
+            <p><strong>Correct sequence to see "#Flash Download Start":</strong></p>
             <ol style="margin-left: 20px; margin-top: 10px; line-height: 2;">
-                <li><strong>Hold BURN</strong> button (~5 sec)</li>
-                <li>While holding BURN, <strong>press RST</strong> (~2 sec)</li>
-                <li><strong>Release RST</strong> first, then <strong>release BURN</strong></li>
-                <li>Serial monitor should show: <code style="color: #79c0ff;">#</code></li>
+                <li><strong>Hold BURN</strong> button (keep holding ~5 seconds)</li>
+                <li>While holding BURN, <strong>press RST</strong> button</li>
+                <li><strong>Release RST</strong> first</li>
+                <li><strong>Then release BURN</strong></li>
+                <li>You should see: <code style="color: #79c0ff;">#Flash Download Start</code></li>
             </ol>
+            <p style="margin-top: 10px; color: #d29922;">💡 After entering bootloader, click "Flash Complete Firmware" below!</p>
         </div>
 
         <div class="flasher-box">
-            <button id="connectBtn">Connect BW16 (1.5 Mbaud)</button>
-            <button id="flashBtn" disabled>Flash Complete Firmware</button>
+            <h3 style="color: #58a6ff; margin-bottom: 15px;">🚀 Flash BW16 Firmware</h3>
+            
+            <button id="connectBtn">Connect BW16 (115200 baud)</button>
+            <button id="flashBtn" disabled>Flash Complete Firmware (2MB)</button>
             
             <div id="progressContainer">
                 <div id="progressBar" style="width: 0%;">0%</div>
@@ -132,331 +161,475 @@
             
             <div id="statusBox"></div>
         </div>
+
+        <div class="downloads-section">
+            <h3>📥 Downloads</h3>
+            <a href="https://github.com/Vampel/Vampire-Deauther/releases/latest/download/vampire_deauther.fap" class="download-link">
+                📦 Download Flipper FAP
+            </a>
+            <a href="https://github.com/Vampel/Vampire-Deauther" class="download-link" target="_blank">
+                🦇 View on GitHub
+            </a>
+        </div>
     </div>
 
     <script>
-        let port = null;
-        let reader = null;
-        let writer = null;
+// ============================================================================
+// BW16 WEB FLASHER v31.1 - SINGLE BLOB FLASH
+// ============================================================================
+// Auto-loads BW16_vampel.bin from GitHub and flashes complete 2MB firmware
+// Based on SharpRTL872xTool methodology - confirmed working addresses
+// ============================================================================
 
-        const BAUD_RATE = 1500000; // CRITICAL: Match Arduino IDE!
-        const CMD_SYNC = 0x07;
-        const CMD_WRITE = 0x02;
-        const CMD_RESET = 0x04;
-        const CMD_ERASE = 0x17;
-        const CMD_FLASH_MODE = 0x26;
-        const ACK = 0x06;
-        const NAK = 0x15;
+const BAUDRATE_INIT = 115200;
+const BAUDRATE_FLASH = 1500000;
+const TIMEOUT_MS = 10000; // 10 seconds like rtltool
 
-        const FLASHLOADER_ADDR = 0x082000;
-        const KM0_BOOT_ADDR = 0x08000000;
-        const KM4_BOOT_ADDR = 0x08004000;
-        const FIRMWARE_ADDR = 0x08006000;
-        const OTA2_ADDR = 0x08106000;
+// Commands
+const CMD_SYNC = 0x07;
+const CMD_RESET = 0x04;
+const CMD_WRITE = 0x02;
+const CMD_WRITE_HEADER = 0x27;
+const ACK = 0x06;
+const NAK = 0x15;
+
+// Flash addresses - CONFIRMED from dump analysis
+const FLASH_OFFSET = 0x00000000; // Single blob starts at 0
+
+let port = null;
+let reader = null;
+let writer = null;
+let firmwareData = null;
+
+// ============================================================================
+// LOGGING
+// ============================================================================
+
+function log(msg, color = '#c9d1d9') {
+    const statusBox = document.getElementById('statusBox');
+    const time = new Date().toLocaleTimeString();
+    const line = document.createElement('div');
+    line.style.color = color;
+    line.textContent = `[${time}] ${msg}`;
+    statusBox.appendChild(line);
+    statusBox.scrollTop = statusBox.scrollHeight;
+}
+
+function updateProgress(percent, text) {
+    const container = document.getElementById('progressContainer');
+    const bar = document.getElementById('progressBar');
+    container.style.display = 'block';
+    bar.style.width = percent + '%';
+    bar.textContent = text || `${percent}%`;
+}
+
+function hideProgress() {
+    document.getElementById('progressContainer').style.display = 'none';
+}
+
+// ============================================================================
+// AUTO-LOAD FIRMWARE FROM GITHUB
+// ============================================================================
+
+async function loadFirmwareFromGitHub() {
+    try {
+        log('[INFO] Loading BW16_vampel.bin from GitHub...', '#58a6ff');
         
-        const FIRMWARE_SIZE_2MB = 0x200000; // 2MB = 2,097,152 bytes
-
-        function log(msg, color = '#c9d1d9') {
-            const statusBox = document.getElementById('statusBox');
-            const time = new Date().toLocaleTimeString();
-            const line = document.createElement('div');
-            line.style.color = color;
-            line.textContent = `[${time}] ${msg}`;
-            statusBox.appendChild(line);
-            statusBox.scrollTop = statusBox.scrollHeight;
+        const response = await fetch('https://vampel.github.io/Vampire-Deauther/BW16_vampel.bin');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-
-        function updateProgress(percent, text) {
-            const container = document.getElementById('progressContainer');
-            const bar = document.getElementById('progressBar');
-            container.style.display = 'block';
-            bar.style.width = percent + '%';
-            bar.textContent = text || `${percent}%`;
+        
+        firmwareData = new Uint8Array(await response.arrayBuffer());
+        
+        const sizeMB = (firmwareData.length / 1024 / 1024).toFixed(2);
+        log(`[INFO] ✅ Firmware loaded: ${firmwareData.length.toLocaleString()} bytes (${sizeMB} MB)`, '#3fb950');
+        
+        if (firmwareData.length !== 2097152) {
+            log(`[WARN] ⚠️  Expected 2.00 MB, got ${sizeMB} MB`, '#d29922');
         }
+        
+        return true;
+        
+    } catch (error) {
+        log(`[ERROR] ❌ Failed to load firmware: ${error.message}`, '#f85149');
+        log('[ERROR] Make sure BW16_vampel.bin exists in the same directory as index.html', '#f85149');
+        return false;
+    }
+}
 
-        async function connectSerial() {
-            try {
-                log('Select BW16 serial port...', '#58a6ff');
-                port = await navigator.serial.requestPort();
-                await port.open({ baudRate: BAUD_RATE });
-                
-                reader = port.readable.getReader();
-                writer = port.writable.getWriter();
-                
-                log(`✅ Connected to BW16 at ${BAUD_RATE} baud`, '#3fb950');
-                log('Now enter bootloader mode (BURN+RST)', '#d29922');
-                
-                document.getElementById('connectBtn').disabled = true;
-                document.getElementById('flashBtn').disabled = false;
-            } catch (error) {
-                log(`❌ Connection error: ${error.message}`, '#f85149');
-            }
+// ============================================================================
+// SERIAL COMMUNICATION
+// ============================================================================
+
+async function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function readBytes(count, timeoutMs = TIMEOUT_MS) {
+    const buffer = [];
+    const startTime = Date.now();
+    
+    while (buffer.length < count) {
+        if (Date.now() - startTime > timeoutMs) {
+            throw new Error(`Timeout reading ${count} bytes (got ${buffer.length})`);
         }
+        
+        const { value, done } = await reader.read();
+        if (done) throw new Error('Stream closed');
+        
+        buffer.push(...value);
+    }
+    
+    return new Uint8Array(buffer.slice(0, count));
+}
 
-        async function readWithTimeout(timeoutMs = 1000) {
-            const timeout = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Timeout')), timeoutMs)
-            );
-            const read = reader.read();
-            return Promise.race([read, timeout]);
-        }
-
-        async function readByte() {
-            const { value } = await readWithTimeout();
-            return value[0];
-        }
-
-        async function flushBuffer() {
-            log('Flushing initial buffer...');
-            let foundNak = false;
-            while (true) {
-                try {
-                    const byte = await readByte();
-                    if (byte === NAK) {
-                        foundNak = true;
-                        break;
-                    }
-                } catch {
-                    if (foundNak) break;
-                    log('No initial NAK, continuing...', '#d29922');
-                    break;
-                }
-            }
-            if (foundNak) log('✓ Found NAK, buffer flushed', '#3fb950');
-        }
-
-        async function waitForNAKs(count = 2) {
-            log(`Waiting for ${count} NAK(s)...`);
-            let nakCount = 0;
-            while (nakCount < count) {
-                try {
-                    const byte = await readByte();
-                    if (byte === NAK) {
-                        nakCount++;
-                    } else {
-                        log(`Expected 0x${NAK.toString(16)}, got 0x${byte.toString(16)}`, '#8b949e');
-                    }
-                } catch {
-                    throw new Error('Timeout waiting for NAK');
-                }
-            }
-            log(`✓ Got ${count} NAK(s)`, '#3fb950');
-        }
-
-        async function sendCommand(cmd, data = []) {
-            const packet = [cmd, ...data];
-            log(`→ CMD: 0x${cmd.toString(16)} [${packet.map(b => '0x' + b.toString(16)).join(' ')}]`, '#d29922');
-            await writer.write(new Uint8Array(packet));
-        }
-
-        async function waitForACK() {
-            const response = await readByte();
-            if (response === ACK) {
-                log('← ACK (0x06)', '#3fb950');
+async function readUntilACK(timeoutMs = TIMEOUT_MS) {
+    const startTime = Date.now();
+    const buffer = [];
+    
+    while (Date.now() - startTime < timeoutMs) {
+        const { value, done } = await reader.read();
+        if (done) throw new Error('Stream closed');
+        
+        for (const byte of value) {
+            buffer.push(byte);
+            if (byte === ACK) {
                 return true;
             }
-            throw new Error(`Expected ACK, got 0x${response.toString(16)}`);
         }
+    }
+    
+    throw new Error(`Timeout waiting for ACK (got ${buffer.length} bytes)`);
+}
 
-        async function syncCommand() {
-            log('Sending SYNC command...');
-            await sendCommand(CMD_SYNC);
-            await waitForACK();
-            log('✓ SYNC complete', '#3fb950');
+async function sendCommand(cmd) {
+    await writer.write(new Uint8Array([cmd]));
+}
+
+async function sendSync() {
+    await sendCommand(CMD_SYNC);
+    await readUntilACK();
+}
+
+async function flushBuffer(timeoutMs = 500) {
+    const startTime = Date.now();
+    let totalBytes = 0;
+    
+    try {
+        while (Date.now() - startTime < timeoutMs) {
+            const { value } = await reader.read();
+            totalBytes += value.length;
         }
+    } catch (e) {
+        // Timeout is expected
+    }
+    
+    return totalBytes;
+}
 
-        function calculateChecksum(data) {
-            let sum = 0;
-            for (let i = 0; i < data.length; i += 4) {
-                const word = (data[i] | (data[i+1] << 8) | (data[i+2] << 16) | (data[i+3] << 24)) >>> 0;
-                sum = (sum + word) >>> 0;
-            }
-            return sum;
+// ============================================================================
+// XMODEM PROTOCOL
+// ============================================================================
+
+function calculateChecksum(data) {
+    let sum = 0;
+    for (const byte of data) {
+        sum = (sum + byte) & 0xFF;
+    }
+    return sum;
+}
+
+async function writeFlashPacket(sequence, offset, data) {
+    const packetSize = data.length;
+    const packet = new Uint8Array(3 + 4 + packetSize + 1);
+    
+    // Header
+    packet[0] = packetSize === 1024 ? 0x02 : 0x01; // STX or SOH
+    packet[1] = sequence & 0xFF;
+    packet[2] = (~sequence) & 0xFF;
+    
+    // Offset (4 bytes, little-endian)
+    packet[3] = (offset) & 0xFF;
+    packet[4] = (offset >> 8) & 0xFF;
+    packet[5] = (offset >> 16) & 0xFF;
+    packet[6] = (offset >> 24) & 0xFF;
+    
+    // Data
+    packet.set(data, 7);
+    
+    // Checksum
+    packet[7 + packetSize] = calculateChecksum(data);
+    
+    // Send packet
+    await writer.write(packet);
+    
+    // Wait for ACK
+    await readUntilACK();
+}
+
+// ============================================================================
+// FLASH PROCESS
+// ============================================================================
+
+async function loadFlashloader() {
+    log('[INFO] Loading flashloader from GitHub...', '#58a6ff');
+    
+    const response = await fetch('https://vampel.github.io/Vampire-Deauther/imgtool_flashloader_amebad.bin');
+    if (!response.ok) {
+        throw new Error(`Error downloading flashloader: ${response.status}`);
+    }
+    
+    const flashloader = new Uint8Array(await response.arrayBuffer());
+    log(`[INFO] ✅ Flashloader loaded: ${flashloader.length} bytes`, '#3fb950');
+    
+    return flashloader;
+}
+
+async function uploadFlashloaderToRAM(flashloader) {
+    const ramAddress = 0x82000;
+    const length = flashloader.length;
+    
+    log(`[INFO] Uploading flashloader to RAM (0x${ramAddress.toString(16).toUpperCase()})...`, '#58a6ff');
+    
+    // Send WRITE_HEADER
+    const header = new Uint8Array(9);
+    header[0] = CMD_WRITE_HEADER;
+    header[1] = (ramAddress) & 0xFF;
+    header[2] = (ramAddress >> 8) & 0xFF;
+    header[3] = (ramAddress >> 16) & 0xFF;
+    header[4] = (ramAddress >> 24) & 0xFF;
+    header[5] = (length) & 0xFF;
+    header[6] = (length >> 8) & 0xFF;
+    header[7] = (length >> 16) & 0xFF;
+    header[8] = (length >> 24) & 0xFF;
+    
+    await writer.write(header);
+    const response = await readBytes(1);
+    
+    if (response[0] !== NAK) {
+        throw new Error(`Expected NAK, got 0x${response[0].toString(16)}`);
+    }
+    
+    // Send data packets
+    const numPackets = Math.ceil(length / 1024);
+    let sequence = 1;
+    
+    for (let i = 0; i < numPackets; i++) {
+        const start = i * 1024;
+        const end = Math.min(start + 1024, length);
+        const chunk = flashloader.slice(start, end);
+        
+        // Pad last packet to 1024 if needed
+        const paddedChunk = new Uint8Array(1024);
+        paddedChunk.set(chunk);
+        paddedChunk.fill(0xFF, chunk.length);
+        
+        await writeFlashPacket(sequence++, 0, paddedChunk);
+    }
+    
+    log(`[INFO] ✅ Flashloader uploaded (${numPackets} packets)`, '#3fb950');
+}
+
+async function flashFirmware() {
+    const totalSize = firmwareData.length;
+    const numPackets = Math.ceil(totalSize / 1024);
+    let sequence = 1;
+    
+    log(`[INFO] Flashing firmware (${(totalSize/1024/1024).toFixed(2)} MB, ${numPackets} packets)...`, '#58a6ff');
+    
+    for (let i = 0; i < numPackets; i++) {
+        const start = i * 1024;
+        const end = Math.min(start + 1024, totalSize);
+        const chunk = firmwareData.slice(start, end);
+        const offset = FLASH_OFFSET + start;
+        
+        // Pad last packet to 1024 if needed
+        const paddedChunk = new Uint8Array(1024);
+        paddedChunk.set(chunk);
+        paddedChunk.fill(0xFF, chunk.length);
+        
+        await writeFlashPacket(sequence++, offset, paddedChunk);
+        
+        // Update progress
+        const percent = ((i + 1) / numPackets) * 100;
+        updateProgress(percent);
+        
+        // Log every 100 packets
+        if ((i + 1) % 100 === 0 || i === numPackets - 1) {
+            log(`[INFO]   Packet ${i + 1}/${numPackets} (${percent.toFixed(1)}%)`, '#c9d1d9');
         }
+    }
+    
+    hideProgress();
+    log('[INFO] ✅ Firmware flashed successfully!', '#3fb950');
+}
 
-        async function writeBlock(addr, data) {
-            const packets = Math.ceil(data.length / 1024);
-            log(`Writing ${packets} packets (${data.length} bytes) to 0x${addr.toString(16)}...`);
+async function performFlash() {
+    try {
+        log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#58a6ff');
+        log('🦇 COMPLETE FLASH START', '#58a6ff');
+        log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#58a6ff');
+        
+        // Phase 1: ROM Bootloader @ 115200
+        log('', '#c9d1d9');
+        log('─── PHASE 1: ROM BOOTLOADER @ 115200 ───', '#58a6ff');
+        
+        await delay(100);
+        const flushed = await flushBuffer();
+        log(`[INFO] Flushed ${flushed} bytes from buffer`, '#c9d1d9');
+        
+        log('[INFO] Sending SYNC to ROM...', '#c9d1d9');
+        await sendSync();
+        log('[INFO] ✓ SYNC complete', '#3fb950');
+        
+        // Upload flashloader
+        const flashloader = await loadFlashloader();
+        await uploadFlashloaderToRAM(flashloader);
+        
+        // Reset to start flashloader
+        log('[INFO] Resetting to start flashloader...', '#c9d1d9');
+        await sendCommand(CMD_RESET);
+        await readUntilACK();
+        
+        // Phase 2: Flashloader @ 115200
+        log('', '#c9d1d9');
+        log('─── PHASE 2: FLASHLOADER SYNC @ 115200 ───', '#58a6ff');
+        
+        await delay(1000);
+        await flushBuffer();
+        
+        log('[INFO] Sending SYNC to flashloader...', '#c9d1d9');
+        await sendSync();
+        log('[INFO] ✓ SYNC complete', '#3fb950');
+        
+        // Phase 3: Change to 1.5Mbaud
+        log('', '#c9d1d9');
+        log('─── PHASE 3: CHANGE TO 1.5MBAUD ───', '#58a6ff');
+        
+        await reader.releaseLock();
+        await writer.releaseLock();
+        await port.close();
+        
+        await delay(100);
+        
+        await port.open({ baudRate: BAUDRATE_FLASH });
+        reader = port.readable.getReader();
+        writer = port.writable.getWriter();
+        
+        log(`[INFO] ✓ Switched to ${BAUDRATE_FLASH} baud`, '#3fb950');
+        
+        await delay(200);
+        
+        log('[INFO] Re-syncing at 1.5Mbaud...', '#c9d1d9');
+        await sendSync();
+        log('[INFO] ✓ SYNC complete at 1.5Mbaud', '#3fb950');
+        
+        // Phase 4: Flash firmware
+        log('', '#c9d1d9');
+        log('─── PHASE 4: FLASH FIRMWARE ───', '#58a6ff');
+        
+        await flashFirmware();
+        
+        // Done!
+        log('', '#c9d1d9');
+        log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#3fb950');
+        log('🎉 FLASH COMPLETE!', '#3fb950');
+        log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#3fb950');
+        log('Reset your BW16 to use the new firmware', '#3fb950');
+        
+    } catch (error) {
+        hideProgress();
+        log('', '#c9d1d9');
+        log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#f85149');
+        log('❌ FLASH FAILED', '#f85149');
+        log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#f85149');
+        log(`[ERROR] ${error.message}`, '#f85149');
+        if (error.stack) {
+            log(`[ERROR] ${error.stack}`, '#f85149');
+        }
+        throw error;
+    }
+}
 
-            for (let i = 0; i < packets; i++) {
-                const offset = i * 1024;
-                const chunk = data.slice(offset, offset + 1024);
-                const padded = new Uint8Array(1024);
-                padded.set(chunk);
-                
-                const checksum = calculateChecksum(padded);
-                const targetAddr = addr + offset;
-                
-                const packet = new Uint8Array(13 + 1024);
-                packet[0] = CMD_WRITE;
-                packet[1] = targetAddr & 0xFF;
-                packet[2] = (targetAddr >> 8) & 0xFF;
-                packet[3] = (targetAddr >> 16) & 0xFF;
-                packet[4] = (targetAddr >> 24) & 0xFF;
-                packet[5] = 0x00; packet[6] = 0x04; packet[7] = 0x00; packet[8] = 0x00;
-                packet[9] = checksum & 0xFF;
-                packet[10] = (checksum >> 8) & 0xFF;
-                packet[11] = (checksum >> 16) & 0xFF;
-                packet[12] = (checksum >> 24) & 0xFF;
-                packet.set(padded, 13);
+// ============================================================================
+// BUTTON HANDLERS
+// ============================================================================
 
-                await writer.write(packet);
-                await waitForACK();
-                
-                updateProgress(Math.round((i + 1) / packets * 100));
+document.getElementById('connectBtn').addEventListener('click', async () => {
+    try {
+        if (port) {
+            // Disconnect
+            if (reader) await reader.releaseLock();
+            if (writer) await writer.releaseLock();
+            await port.close();
+            
+            port = null;
+            reader = null;
+            writer = null;
+            
+            document.getElementById('connectBtn').textContent = 'Connect BW16 (115200 baud)';
+            document.getElementById('flashBtn').disabled = true;
+            
+            log('[WARN] Disconnected from BW16', '#d29922');
+            
+        } else {
+            // Connect
+            log('Select BW16 serial port...', '#58a6ff');
+            
+            port = await navigator.serial.requestPort();
+            await port.open({ baudRate: BAUDRATE_INIT });
+            
+            reader = port.readable.getReader();
+            writer = port.writable.getWriter();
+            
+            document.getElementById('connectBtn').textContent = 'Disconnect';
+            
+            if (firmwareData) {
+                document.getElementById('flashBtn').disabled = false;
             }
             
-            log('✓ Block written successfully', '#3fb950');
+            log(`[INFO] ✅ Connected to BW16 at ${BAUDRATE_INIT} baud`, '#3fb950');
+            log('[INFO] Now enter bootloader mode (BURN+RST)', '#d29922');
         }
+        
+    } catch (error) {
+        log(`[ERROR] ❌ Connection error: ${error.message}`, '#f85149');
+    }
+});
 
-        async function eraseFlash(addr, blocks) {
-            const packet = new Uint8Array(6);
-            packet[0] = CMD_ERASE;
-            packet[1] = addr & 0xFF;
-            packet[2] = (addr >> 8) & 0xFF;
-            packet[3] = (addr >> 16) & 0xFF;
-            packet[4] = (addr >> 24) & 0xFF;
-            packet[5] = blocks & 0xFF;
-            
-            log(`Erase 0x${addr.toString(16)} (${blocks} blocks)`);
-            log(`→ CMD: 0x${CMD_ERASE.toString(16)} [${Array.from(packet).map(b => '0x' + b.toString(16)).join(' ')}]`, '#d29922');
-            await writer.write(packet);
-            await waitForACK();
-        }
+document.getElementById('flashBtn').addEventListener('click', async () => {
+    try {
+        document.getElementById('flashBtn').disabled = true;
+        document.getElementById('connectBtn').disabled = true;
+        
+        await performFlash();
+        
+    } catch (error) {
+        log('[ERROR] Flash failed. Check connection and try again.', '#f85149');
+        
+    } finally {
+        document.getElementById('flashBtn').disabled = false;
+        document.getElementById('connectBtn').disabled = false;
+    }
+});
 
-        function padFirmwareTo2MB(data) {
-            log(`📦 Padding firmware from ${data.length} to ${FIRMWARE_SIZE_2MB} bytes with 0xFF`, '#58a6ff');
-            const padded = new Uint8Array(FIRMWARE_SIZE_2MB);
-            padded.fill(0xFF);
-            padded.set(new Uint8Array(data));
-            return padded;
-        }
+// ============================================================================
+// STARTUP - AUTO-LOAD FIRMWARE
+// ============================================================================
 
-        async function loadFile(filename) {
-            try {
-                const response = await fetch(filename);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const data = await response.arrayBuffer();
-                log(`✓ Loaded ${filename} (${data.byteLength} bytes)`, '#3fb950');
-                return data;
-            } catch (error) {
-                throw new Error(`Failed to load ${filename}: ${error.message}`);
-            }
-        }
+log('[INFO] Complete BW16 Web Flasher v31.1 FINAL', '#58a6ff');
+log('[INFO] Single blob flash method (2MB)', '#3fb950');
+log('[INFO] Auto-loading firmware from GitHub...', '#c9d1d9');
 
-        async function flashFirmware() {
-            try {
-                document.getElementById('flashBtn').disabled = true;
-                updateProgress(0, 'Starting...');
+loadFirmwareFromGitHub().then(success => {
+    if (success) {
+        log('[INFO] Ready to flash! Connect your BW16 to begin.', '#3fb950');
+    } else {
+        log('[ERROR] Failed to load firmware. Cannot proceed.', '#f85149');
+    }
+});
 
-                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#58a6ff');
-                log('🦇 COMPLETE FLASH START', '#58a6ff');
-                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#58a6ff');
-
-                await flushBuffer();
-                await waitForNAKs(2);
-                await syncCommand();
-
-                updateProgress(5, 'Loading flashloader...');
-                const flashloader = await loadFile('imgtool_flashloader_amebad.bin');
-                log(`Uploading flashloader (${flashloader.byteLength} bytes) to RAM 0x${FLASHLOADER_ADDR.toString(16)}...`);
-                await writeBlock(FLASHLOADER_ADDR, new Uint8Array(flashloader));
-
-                updateProgress(10, 'Resetting flashloader...');
-                log('Resetting flashloader...');
-                await sendCommand(CMD_RESET);
-                await waitForACK();
-                await waitForNAKs(2);
-
-                updateProgress(15, 'Entering flash mode...');
-                log('Entering flash programming mode...');
-                await sendCommand(CMD_FLASH_MODE, [0x01, 0x01, 0x00]);
-                await waitForACK();
-
-                updateProgress(20, 'Loading files...');
-                const km0Boot = new Uint8Array(await loadFile('km0_boot_all.bin'));
-                const km4Boot = new Uint8Array(await loadFile('km4_boot_all.bin'));
-                const firmwareRaw = await loadFile('km0_km4_image2.bin');
-                
-                // CRITICAL: Pad firmware to 2MB with 0xFF
-                const firmware = padFirmwareTo2MB(firmwareRaw);
-
-                updateProgress(25, 'Erasing flash...');
-                log('Erasing flash blocks (this may take 30-60 seconds)...', '#d29922');
-                
-                await eraseFlash(KM0_BOOT_ADDR, 2);
-                await eraseFlash(KM4_BOOT_ADDR, 2);
-                
-                const firmwareBlocks = Math.ceil(firmware.length / 4096);
-                log(`⚠️ Erasing ${firmwareBlocks} blocks for 2MB firmware...`, '#d29922');
-                await eraseFlash(FIRMWARE_ADDR, firmwareBlocks);
-                
-                log('⚠️ CRITICAL: Erasing OTA Address 2 (checked first by bootloader)...', '#f85149');
-                await eraseFlash(OTA2_ADDR, firmwareBlocks);
-                
-                log('✓ Erase complete', '#3fb950');
-
-                updateProgress(40, 'Syncing after erase...');
-                log('Waiting for flashloader to be ready...');
-                await new Promise(r => setTimeout(r, 1000));
-                log('Sending SYNC after erase...');
-                await sendCommand(CMD_SYNC);
-                await waitForACK();
-                await new Promise(r => setTimeout(r, 2000));
-
-                updateProgress(45, 'Writing KM0 bootloader...');
-                log('Writing KM0 bootloader to 0x000000...');
-                await writeBlock(0x0, km0Boot);
-
-                updateProgress(60, 'Writing KM4 bootloader...');
-                log('Writing KM4 bootloader to 0x004000...');
-                await writeBlock(0x4000, km4Boot);
-
-                updateProgress(65, 'Writing firmware (2MB)...');
-                log('Writing firmware to 0x006000 (2MB padded)...');
-                await writeBlock(0x6000, firmware);
-
-                updateProgress(95, 'Performing hardware reset...');
-                log('Performing hardware reset via DTR/RTS...', '#d29922');
-                await sendCommand(CMD_RESET);
-                await waitForACK();
-                
-                // Hardware reset sequence
-                await port.setSignals({ dataTerminalReady: false, requestToSend: false });
-                await new Promise(r => setTimeout(r, 100));
-                await port.setSignals({ dataTerminalReady: true, requestToSend: true });
-                
-                updateProgress(100, '✅ COMPLETE!');
-                
-                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#3fb950');
-                log('✅ FLASH SUCCESSFUL!', '#3fb950');
-                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#3fb950');
-                log('Device should auto-boot into firmware now!', '#3fb950');
-
-            } catch (error) {
-                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#f85149');
-                log(`❌ FLASH FAILED: ${error.message}`, '#f85149');
-                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#f85149');
-                updateProgress(0, 'Failed');
-                document.getElementById('progressContainer').style.display = 'none';
-                throw error;
-            } finally {
-                try {
-                    if (reader) { reader.releaseLock(); reader = null; }
-                    if (writer) { writer.releaseLock(); writer = null; }
-                    if (port) { await port.close(); port = null; }
-                } catch {}
-                document.getElementById('connectBtn').disabled = false;
-                document.getElementById('flashBtn').disabled = true;
-            }
-        }
-
-        document.getElementById('connectBtn').addEventListener('click', connectSerial);
-        document.getElementById('flashBtn').addEventListener('click', flashFirmware);
-
-        log('[INFO] Complete BW16 Web Flasher v9.0', '#58a6ff');
-        log('[INFO] CRITICAL: 1.5Mbaud + 2MB padding (matches Arduino IDE)', '#3fb950');
-        log('[INFO] Ready. Click "Connect BW16" to begin.', '#c9d1d9');
     </script>
 </body>
 </html>
