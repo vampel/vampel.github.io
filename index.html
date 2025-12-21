@@ -441,6 +441,11 @@ async function flashFirmware() {
     
     log(`[INFO] Flashing firmware (${(totalSize/1024/1024).toFixed(2)} MB, ${numPackets} packets)...`, '#58a6ff');
     
+    // Flush any pending NAKs from XMODEM ready state
+    await delay(100);
+    const flushedNAKs = await flushBuffer(200);
+    log(`[INFO] Cleared ${flushedNAKs} NAKs from buffer`, '#c9d1d9');
+    
     for (let i = 0; i < numPackets; i++) {
         const start = i * 1024;
         const end = Math.min(start + 1024, totalSize);
