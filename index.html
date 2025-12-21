@@ -323,6 +323,42 @@ async function flushBuffer(timeoutMs = 1000) {
 }
 
 // ============================================================================
+// XMODEM PROTOCOL
+// ============================================================================
+
+async function writeFlashPacket(sequence, offset, data) {
+    const packetSize = data.length;
+    const packet = new Uint8Array(3 + 4 + packetSize + 1);
+    
+    // Header
+    packet[0] = packetSize === 1024 ? 0x02 : 0x01; // STX or SOH
+    packet[1] = sequence & 0xFF;
+    packet[2] = (~sequence) & 0xFF;
+    
+    // Offset (4 bytes, little-endian)
+    packet[3] = (offset) & 0xFF;
+    packet[4] = (offset >> 8) & 0xFF;
+    packet[5] = (offset >> 16) & 0xFF;
+    packet[6] = (offset >> 24) & 0xFF;
+    
+    // Data
+    packet.set(data, 7);
+    
+    // Checksum
+    let sum = 0;
+    for (let i = 0; i < packetSize; i++) {
+        sum = (sum + data[i]) & 0xFF;
+    }
+    packet[7 + packetSize] = sum;
+    
+    // Send packet
+    await writer.write(packet);
+    
+    // Wait for ACK
+    await readUntilACK();
+}
+
+// ============================================================================
 // FLASH PROCESS
 // ============================================================================
 
