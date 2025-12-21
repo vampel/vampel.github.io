@@ -520,19 +520,17 @@ async function performFlash() {
         const flashloader = await loadFlashloader();
         await uploadFlashloaderToRAM(flashloader);
         
-        // Reset to start flashloader
-        log('[INFO] Resetting to start flashloader...', '#c9d1d9');
-        await sendCommand(CMD_RESET);
-        await readUntilACK();
+        // Flashloader auto-executes from RAM - NO RESET NEEDED!
+        log('[INFO] Flashloader auto-executing from RAM...', '#c9d1d9');
         
-        // Phase 2: Flashloader @ 115200
+        // Phase 2: Wait for flashloader to start @ 115200
         log('', '#c9d1d9');
-        log('─── PHASE 2: FLASHLOADER SYNC @ 115200 ───', '#58a6ff');
+        log('─── PHASE 2: FLASHLOADER READY @ 115200 ───', '#58a6ff');
         
-        // Try immediate flush - flashloader might be ready
+        // Give flashloader time to initialize
         await delay(500);
         let flushed2 = await flushBuffer(500);
-        log(`[INFO] Flushed ${flushed2} bytes immediately after reset`, '#c9d1d9');
+        log(`[INFO] Flushed ${flushed2} bytes from flashloader startup`, '#c9d1d9');
         
         // Try SYNC - might work immediately
         log('[INFO] Attempting SYNC with flashloader...', '#c9d1d9');
@@ -557,6 +555,14 @@ async function performFlash() {
         log('', '#c9d1d9');
         log('─── PHASE 3: CHANGE TO 1.5MBAUD ───', '#58a6ff');
         
+        // Send SET_BAUDRATE command to flashloader
+        log('[INFO] Sending SET_BAUDRATE command...', '#c9d1d9');
+        const CMD_SET_BAUDRATE = 0x05;
+        await sendCommand(CMD_SET_BAUDRATE);
+        await readUntilACK();
+        log('[INFO] ✓ Flashloader acknowledged baudrate change', '#3fb950');
+        
+        // Now change PC baudrate
         await reader.releaseLock();
         await writer.releaseLock();
         await port.close();
@@ -567,7 +573,7 @@ async function performFlash() {
         reader = port.readable.getReader();
         writer = port.writable.getWriter();
         
-        log(`[INFO] ✓ Switched to ${BAUDRATE_FLASH} baud`, '#3fb950');
+        log(`[INFO] ✓ PC switched to ${BAUDRATE_FLASH} baud`, '#3fb950');
         
         await delay(200);
         
