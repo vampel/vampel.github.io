@@ -114,7 +114,7 @@
 
         <div class="downloads-section">
             <h3>📥 Downloads</h3>
-            <a href="https://github.com/Vampel/Vampire-Deauther/releases/latest/download/vampire_deauther.fap" class="download-link">
+            <a href="./vampire_deauther.fap" class="download-link" download>
                 📦 Download Flipper FAP
             </a>
             <a href="https://github.com/Vampel/Vampire-Deauther" class="download-link" target="_blank">
@@ -516,10 +516,15 @@ async function performFlash() {
         log('', '#c9d1d9');
         log('─── PHASE 2: FLASHLOADER SYNC @ 115200 ───', '#58a6ff');
         
-        await delay(2000); // Increased from 1000ms - flashloader needs time to start
-        const flushed2 = await flushBuffer();
-        log(`[INFO] Flushed ${flushed2} bytes after reset`, '#c9d1d9');
+        // Wait for flashloader to fully start and send banner
+        log('[INFO] Waiting for flashloader banner...', '#c9d1d9');
+        await delay(1500); // Give flashloader time to start
         
+        // Flush any banner/startup messages
+        const flushed2 = await flushBuffer(2000); // Longer timeout to catch all banner
+        log(`[INFO] Flushed ${flushed2} bytes (flashloader banner)`, '#c9d1d9');
+        
+        // Now sync with flashloader
         log('[INFO] Sending SYNC to flashloader...', '#c9d1d9');
         await sendSync();
         log('[INFO] ✓ SYNC complete', '#3fb950');
