@@ -310,13 +310,26 @@ async function flushBuffer(timeoutMs = 1000) {
     const startTime = Date.now();
     let totalBytes = 0;
     
-    try {
-        while (Date.now() - startTime < timeoutMs) {
-            const { value } = await reader.read();
-            totalBytes += value.length;
+    while (Date.now() - startTime < timeoutMs) {
+        try {
+            // Try to read with a very short timeout
+            const readPromise = reader.read();
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('flush timeout')), 100)
+            );
+            
+            const result = await Promise.race([readPromise, timeoutPromise]);
+            
+            if (result.value && result.value.length > 0) {
+                totalBytes += result.value.length;
+            } else {
+                // No more data available
+                break;
+            }
+        } catch (e) {
+            // Timeout or no data - that's OK
+            break;
         }
-    } catch (e) {
-        // Timeout is expected
     }
     
     return totalBytes;
@@ -516,18 +529,29 @@ async function performFlash() {
         log('', '#c9d1d9');
         log('─── PHASE 2: FLASHLOADER SYNC @ 115200 ───', '#58a6ff');
         
-        // Wait for flashloader to fully start and send banner
-        log('[INFO] Waiting for flashloader banner...', '#c9d1d9');
-        await delay(1500); // Give flashloader time to start
+        // Try immediate flush - flashloader might be ready
+        await delay(500);
+        let flushed2 = await flushBuffer(500);
+        log(`[INFO] Flushed ${flushed2} bytes immediately after reset`, '#c9d1d9');
         
-        // Flush any banner/startup messages
-        const flushed2 = await flushBuffer(2000); // Longer timeout to catch all banner
-        log(`[INFO] Flushed ${flushed2} bytes (flashloader banner)`, '#c9d1d9');
-        
-        // Now sync with flashloader
-        log('[INFO] Sending SYNC to flashloader...', '#c9d1d9');
-        await sendSync();
-        log('[INFO] ✓ SYNC complete', '#3fb950');
+        // Try SYNC - might work immediately
+        log('[INFO] Attempting SYNC with flashloader...', '#c9d1d9');
+        try {
+            await sendSync();
+            log('[INFO] ✓ SYNC complete on first try!', '#3fb950');
+        } catch (e1) {
+            log(`[WARN] First SYNC failed: ${e1.message}`, '#d29922');
+            
+            // Wait a bit more and try again
+            log('[INFO] Waiting for flashloader to initialize...', '#c9d1d9');
+            await delay(1000);
+            flushed2 = await flushBuffer(1000);
+            log(`[INFO] Flushed ${flushed2} more bytes`, '#c9d1d9');
+            
+            log('[INFO] Retrying SYNC...', '#c9d1d9');
+            await sendSync();
+            log('[INFO] ✓ SYNC complete on retry', '#3fb950');
+        }
         
         // Phase 3: Change to 1.5Mbaud
         log('', '#c9d1d9');
