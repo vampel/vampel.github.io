@@ -523,33 +523,16 @@ async function performFlash() {
         // Flashloader auto-executes from RAM - NO RESET NEEDED!
         log('[INFO] Flashloader auto-executing from RAM...', '#c9d1d9');
         
-        // Phase 2: Wait for flashloader to start @ 115200
+        // Phase 2: Flashloader is running, change baudrate immediately
         log('', '#c9d1d9');
-        log('─── PHASE 2: FLASHLOADER READY @ 115200 ───', '#58a6ff');
+        log('─── PHASE 2: CHANGE TO 1.5MBAUD ───', '#58a6ff');
         
-        // Give flashloader time to initialize
-        await delay(500);
-        let flushed2 = await flushBuffer(500);
-        log(`[INFO] Flushed ${flushed2} bytes from flashloader startup`, '#c9d1d9');
+        // Small delay for flashloader to initialize
+        await delay(200);
         
-        // Try SYNC - might work immediately
-        log('[INFO] Attempting SYNC with flashloader...', '#c9d1d9');
-        try {
-            await sendSync();
-            log('[INFO] ✓ SYNC complete on first try!', '#3fb950');
-        } catch (e1) {
-            log(`[WARN] First SYNC failed: ${e1.message}`, '#d29922');
-            
-            // Wait a bit more and try again
-            log('[INFO] Waiting for flashloader to initialize...', '#c9d1d9');
-            await delay(1000);
-            flushed2 = await flushBuffer(1000);
-            log(`[INFO] Flushed ${flushed2} more bytes`, '#c9d1d9');
-            
-            log('[INFO] Retrying SYNC...', '#c9d1d9');
-            await sendSync();
-            log('[INFO] ✓ SYNC complete on retry', '#3fb950');
-        }
+        // Flush any startup NAKs
+        const flushed2 = await flushBuffer(300);
+        log(`[INFO] Flushed ${flushed2} bytes from flashloader`, '#c9d1d9');
         
         // Phase 3: Change to 1.5Mbaud
         log('', '#c9d1d9');
@@ -581,9 +564,9 @@ async function performFlash() {
         await sendSync();
         log('[INFO] ✓ SYNC complete at 1.5Mbaud', '#3fb950');
         
-        // Phase 4: Flash firmware
+        // Phase 3: Flash firmware
         log('', '#c9d1d9');
-        log('─── PHASE 4: FLASH FIRMWARE ───', '#58a6ff');
+        log('─── PHASE 3: FLASH FIRMWARE ───', '#58a6ff');
         
         // Start XMODEM transfer
         log('[INFO] Starting XMODEM transfer...', '#c9d1d9');
