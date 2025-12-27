@@ -13,7 +13,8 @@
             line-height: 1.6;
         }
         .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
-        h1 { font-size: 2.5em; margin-bottom: 10px; color: #58a6ff; text-align: center; }
+        h1 { font-size: 2.5em; margin-bottom: 10px; color: #ffffff; text-align: center; }
+        h3 { color: #ffffff; }
         .subtitle { text-align: center; color: #8b949e; margin-bottom: 40px; }
         .flasher-box {
             background: #161b22;
@@ -31,7 +32,7 @@
         }
         .info-box {
             background: #1c2128;
-            border: 2px solid #58a6ff;
+            border: 2px solid #30363d;
             border-radius: 6px;
             padding: 20px;
             margin-bottom: 20px;
@@ -44,7 +45,7 @@
             margin-bottom: 20px;
         }
         .warning-box h3 { color: #f85149; margin-bottom: 10px; }
-        .info-box h3 { color: #58a6ff; margin-bottom: 10px; }
+        .info-box h3 { color: #ffffff; margin-bottom: 10px; }
         .success-box h3 { color: #3fb950; margin-bottom: 10px; }
         
         .downloads-section {
@@ -56,13 +57,13 @@
             text-align: center;
         }
         .downloads-section h3 { 
-            color: #58a6ff; 
+            color: #ffffff; 
             margin-bottom: 15px; 
         }
         
         .download-link {
             display: inline-block;
-            background: #238636;
+            background: #1a1a1a;
             color: white;
             padding: 12px 24px;
             border-radius: 6px;
@@ -70,13 +71,14 @@
             margin: 10px 5px;
             transition: background 0.2s;
             font-weight: bold;
+            border: 1px solid #30363d;
         }
-        .download-link:hover { background: #2ea043; }
+        .download-link:hover { background: #2a2a2a; }
         
         button {
-            background: #238636;
+            background: #1a1a1a;
             color: white;
-            border: none;
+            border: 1px solid #30363d;
             padding: 12px 24px;
             font-size: 16px;
             border-radius: 6px;
@@ -85,7 +87,7 @@
             margin: 10px 0;
             transition: background 0.2s;
         }
-        button:hover { background: #2ea043; }
+        button:hover { background: #2a2a2a; }
         button:disabled { background: #21262d; color: #484f58; cursor: not-allowed; }
         #statusBox {
             background: #0d1117;
@@ -114,7 +116,7 @@
 <body>
     <div class="container">
         <h1>🦇 Vampire Deauther 2.4Ghz & 5Ghz</h1>
-        <p class="subtitle">1st Ameba/BW16 Web Flasher v1.22</p>
+        <p class="subtitle">Complete BW16 Web Flasher v1.22 Note: some Modems have PMF enabled (cant Deauth))</p>
 
         <div class="downloads-section">
             <h3>📥 Downloads</h3>
@@ -127,7 +129,7 @@
         </div>
 
         <div class="flasher-box">
-            <h3 style="color: #58a6ff; margin-bottom: 15px;">🚀 Flash BW16 Firmware</h3>
+            <h3 style="color: #ffffff; margin-bottom: 15px;">🚀 Flash BW16 Firmware</h3>
             
             <button id="connectBtn">Connect BW16 (COM port)</button>
             <button id="flashBtn" disabled>Flash Firmware</button>
@@ -140,9 +142,9 @@
             
             <hr style="border: none; border-top: 1px solid #30363d; margin: 30px 0;">
             
-            <h3 style="color: #58a6ff; margin-bottom: 15px;">📁 Custom Firmware (Optional)</h3>
+            <h3 style="color: #ffffff; margin-bottom: 15px;">📁 Custom Firmware (Optional)</h3>
             <p style="color: #8b949e; margin-bottom: 15px; font-size: 14px;">
-                Leave empty to use default Vampire Deauther firmware from GitHub, or select your own files:
+                Leave empty to use default Vampire Deauther firmware from GitHub, or select your own files to flash any ameba RTL872xDx firmware.:
             </p>
             <div style="margin-bottom: 10px;">
                 <label style="display: block; margin-bottom: 5px; font-size: 14px;">Flashloader (imgtool_flashloader_amebad.bin):</label>
@@ -152,6 +154,39 @@
                 <label style="display: block; margin-bottom: 5px; font-size: 14px;">Your Ameba Firmware (2MB, 4MB, or any size - no padding):</label>
                 <input type="file" id="firmwareFile" accept=".bin" style="width: 100%; padding: 8px; background: #0d1117; border: 1px solid #30363d; border-radius: 4px; color: #c9d1d9;">
             </div>
+        </div>
+
+        <div class="info-box">
+            <h3>🔌 BW16 to Flipper Zero Wiring</h3>
+            <pre style="background: #0d1117; padding: 15px; border-radius: 4px; overflow-x: auto; font-size: 13px; line-height: 1.8;">
+BW16 (22 pins)                         Flipper Zero GPIO Header
+================                       =========================
+Pin 1  - 3V3      (Red)           ---> Pin 9   - 3.3V  ✅
+Pin 2  - GND      (Black)         ---> Pin 18  - GND   ✅
+Pin 3  - PA26_TXD (Any Color)     ---> Pin 14  - RX (Flipper receive data) ✅
+Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
+            </pre>
+            <p style="margin-top: 15px; line-height: 1.8;">
+                <strong>⚠️ Note:</strong> Used black PCB 22 pins BW16(RTL8720DN) 2MB Flash memory. 30 pins version doesn't work properly (blue PCB).<br>
+                <strong>🔧 Leds indication:</strong> <br>Solid green = BW16 ready<br>
+                                            Blinking blue = Scanning Wi-Fi networks<br>
+                                            Blinking red = Deauthentication of single network<br>
+                                            Blinking red (slower) = Deauthentication of all networks<br>
+                                            Blinking green = Beacon spam.<br>
+                <strong>💻 Standalone Use:</strong> Can be used without Flipper Zero via Arduino IDE at 115200 baud
+            </p>
+            
+            <h4 style="color: #ffffff; margin-top: 20px; margin-bottom: 10px;">Serial Monitor Commands:</h4>
+            <ul style="margin-left: 20px; line-height: 2; font-family: 'Courier New', monospace; font-size: 14px;">
+                <li><code style="color: #79c0ff;">AT+SCAN</code> - Scan WiFi networks and save them to memory as indexed list</li>
+                <li><code style="color: #79c0ff;">AT+DEAUTHIDX=</code> - = followed by the index number Deauth a single network(press RESET button to restart BW16)</li>
+                <li><code style="color: #79c0ff;">AT+DEAUTHIDX=ALL</code> - Deauth all networks in index (press RESET button to restart BW16)</li>
+                <li><code style="color: #79c0ff;">AT+BEACONRANDOM=Vampel</code> - Spam networks with suffix "Vampel 001, Vampel 002... up to 50"</li>
+                <li><code style="color: #79c0ff;">AT+STOP</code> - Stop current operation (Note: Memory fills during deauth, may need RESET)</li>
+            </ul>
+            <p style="margin-top: 10px; color: #8b949e; font-size: 14px;">
+                With Flipper Zero, the menu guides you through all options easily.
+            </p>
         </div>
 
         <div class="warning-box">
@@ -165,6 +200,15 @@
                 <li>Serial should show: <code style="color: #79c0ff;">#Flash Download Start</code></li>
             </ol>
             <p style="margin-top: 10px; color: #d29922;">💡 Tip: Open serial monitor at 115200 to confirm bootloader mode before flashing!</p>
+        </div>
+
+        <div class="info-box">
+            <h3>🚀 Future Features</h3>
+            <ul style="margin-left: 20px; margin-top: 10px; line-height: 2; color: #c9d1d9;">
+                <li>Change baud rate to 1500000 for faster flashing</li>
+                <li>Ability to read & save firmwares from BW16</li>
+                <li>Thanks to all the developers of SharpRTL872xTool, my code was based on this.</li>
+            </ul>
         </div>
     </div>
 
