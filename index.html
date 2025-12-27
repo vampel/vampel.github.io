@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <!-- Version: v1.31-1766831033 -->
-    <title>🦇 Vampire Deauther 2.4GHz & 5GHz - BW16 Web Flasher v1.31 AUTO-RESET</title>
+    <title>🦇 Vampire Deauther 2.4GHz & 5GHz - BW16 Web Flasher v1.31 AUTO-DOWNLOAD MODE</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -120,7 +120,7 @@
 <body>
     <div class="container">
         <h1>🦇 Vampire Deauther 2.4Ghz & 5Ghz</h1>
-        <p class="subtitle">Complete BW16 Web Flasher v1.31 AUTO-RESET</p>
+        <p class="subtitle">Complete BW16 Web Flasher v1.31 AUTO-DOWNLOAD MODE</p>
 
         <div class="downloads-section">
             <h3>📥 Downloads</h3>
@@ -180,9 +180,10 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                 <strong>🔧 Leds indication:</strong><br>
                 Solid green = BW16 ready<br>
                 Blinking blue = Scanning Wi-Fi networks<br>
-                Blinking red = Deauthentication of single network<br>
-                Blinking red (slower) = Deauthentication of all networks<br>
-                Blinking green = Beacon spam.
+                Blinking red = Deauthentication of single network(press RESET button on board to stop it)<br>
+                Blinking red (slower) = Deauthentication of all networks(press RESET button on board to stop it)<br>
+                Blinking green = Beacon spam. (Pressing back button on Flipper stops it)<br>
+                Note: Memory fills during deauth, may need RESET board
             </p>
             <p style="line-height: 1.8;">
                 <strong>💻 Standalone Use:</strong> Can be used without Flipper Zero via Arduino IDE at 115200 baud
@@ -1444,7 +1445,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
         document.getElementById('connectBtn').addEventListener('click', connectSerial);
         document.getElementById('flashBtn').addEventListener('click', flashFirmware);
 
-        log('[INFO] BW16 Web Flasher v1.31 AUTO-RESET - VampelRTL Protocol', '#58a6ff');
+        log('[INFO] BW16 Web Flasher v1.31 AUTO-DOWNLOAD - VampelRTL Protocol', '#58a6ff');
         log('[INFO] Consume ALL bytes until ACK (VampelRTL WaitResp)');
         log('[INFO] Auto-loads firmware from GitHub or local files', '#c9d1d9');
         
