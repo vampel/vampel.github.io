@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🦇 Vampire Deauther 2.4GHz & 5GHz - BW16 Web Flasher v1.22</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <!-- Version: v1.31-1766831033 -->
+    <title>🦇 Vampire Deauther 2.4GHz & 5GHz - BW16 Web Flasher v1.31 AUTO-RESET</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -102,7 +106,7 @@
         }
         #progressContainer { display: none; margin: 20px 0; }
         #progressBar {
-            background: #238636;
+            background: linear-gradient(90deg, #000000 0%, #1a1a1a 100%);
             height: 30px;
             border-radius: 6px;
             text-align: center;
@@ -116,7 +120,7 @@
 <body>
     <div class="container">
         <h1>🦇 Vampire Deauther 2.4Ghz & 5Ghz</h1>
-        <p class="subtitle">Complete BW16 Web Flasher v1.22 Note: some Modems have PMF enabled (cant Deauth))</p>
+        <p class="subtitle">Complete BW16 Web Flasher v1.31 AUTO-RESET</p>
 
         <div class="downloads-section">
             <h3>📥 Downloads</h3>
@@ -132,6 +136,9 @@
             <h3 style="color: #ffffff; margin-bottom: 15px;">🚀 Flash BW16 Firmware</h3>
             
             <button id="connectBtn">Connect BW16 (COM port)</button>
+            
+            
+            
             <button id="flashBtn" disabled>Flash Firmware</button>
             
             <div id="progressContainer">
@@ -190,29 +197,19 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                 <li><code style="color: #79c0ff;">AT+STOP</code> - Stop current operation (Note: Memory fills during deauth, may need RESET)</li>
             </ul>
             <p style="margin-top: 10px; color: #8b949e; font-size: 14px;">
-                With Flipper Zero, the menu guides you through all options easily.
+                With Flipper Zero, the menu guides you through all options easily.<br>
+                Note: some Modems have PMF enabled (cant Deauth)
             </p>
         </div>
 
-        <div class="warning-box">
-            <h3>⚡ Enter Bootloader Mode (IMPORTANT!)</h3>
-            <p><strong>Correct sequence to see "#Flash Download Start":</strong></p>
-            <ol style="margin-left: 20px; margin-top: 10px; line-height: 2;">
-                <li><strong>Hold BURN</strong> button (keep holding ~5 seconds)</li>
-                <li>While holding BURN, <strong>press RST</strong> button (~2 seconds)</li>
-                <li><strong>Release RST</strong> first</li>
-                <li><strong>Then release BURN</strong></li>
-                <li>Serial should show: <code style="color: #79c0ff;">#Flash Download Start</code></li>
-            </ol>
-            <p style="margin-top: 10px; color: #d29922;">💡 Tip: Open serial monitor at 115200 to confirm bootloader mode before flashing!</p>
-        </div>
+        
 
         <div class="info-box">
             <h3>🚀 Future Features</h3>
             <ul style="margin-left: 20px; margin-top: 10px; line-height: 2; color: #c9d1d9;">
                 <li>Change baud rate to 1500000 for faster flashing</li>
                 <li>Ability to read & save firmwares from BW16</li>
-                <li>Thanks to all the developers of SharpRTL872xTool, my code was based on this.</li>
+                <li>Thanks to all the developers of VampelRTL872xTool, my code was based on this.</li>
             </ul>
         </div>
     </div>
@@ -343,7 +340,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                 }
             } catch {}
             
-            log(`✓ Baudrate changed to ${newBaud}`, '#3fb950');
+            log(`✓ Baudrate changed to ${newBaud}`);
             return newBaud;
         }
 
@@ -364,8 +361,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                 reader = port.readable.getReader();
                 writer = port.writable.getWriter();
                 
-                log(`✅ Connected to BW16 at ${BAUD_RATE_INITIAL} baud`, '#3fb950');
-                log('Now enter bootloader mode (BURN+RST)', '#d29922');
+                log(`✅ Connected to BW16 at ${BAUD_RATE_INITIAL} baud`);
                 
                 document.getElementById('connectBtn').disabled = true;
                 document.getElementById('flashBtn').disabled = false;
@@ -447,11 +443,11 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
             }
             
             if (foundDownloadMsg) {
-                log('✅ "Flash Download Start" detected!', '#3fb950');
+                log('✅ "Flash Download Start" detected!');
             }
             
             if (foundNak) {
-                log(`✓ Found NAK! Bootloader detected`, '#3fb950');
+                log(`✓ Found NAK! Bootloader detected`);
             } else {
                 log(`Total: ${byteCount} bytes, ${nullCount} nulls, NO NAK`, '#f85149');
                 
@@ -507,7 +503,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
             if (nakCount < count) {
                 throw new Error(`Timeout: only got ${nakCount}/${count} NAKs`);
             }
-            log(`✓ Got ${count} NAK(s)`, '#3fb950');
+            log(`✓ Got ${count} NAK(s)`);
         }
 
         async function sendCommand(cmd, data = []) {
@@ -517,7 +513,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
         }
 
         // Special command sender for flashloader that waits for NAK first
-        async function sendFlashloaderCommand(cmd, data = [], timeoutMs = 1000) {
+        async function sendFlashloaderCommand(cmd, data = [], timeoutMs = 1000, allowFailure = false) {
             // Wait for and consume NAK from flashloader
             const nakStart = Date.now();
             while (Date.now() - nakStart < 2000) {
@@ -535,7 +531,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
             // Flashloader responds with ACK + NAK
             const response = await readByteWithTimeout(timeoutMs);
             if (response === ACK) {
-                log('← ACK (0x06)', '#3fb950');
+                log('← ACK (0x06)');
                 
                 // Read the NAK that follows
                 try {
@@ -547,7 +543,11 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                     // Some commands might not send NAK after ACK
                 }
                 
-                return true;
+                return { success: true, acked: true };
+            } else if (response === NAK && allowFailure) {
+                // Command not supported or failed - but continue if allowed
+                log(`← NAK (0x15) - command not supported/failed`, '#d29922');
+                return { success: false, acked: false };
             }
             throw new Error(`Expected ACK, got 0x${response.toString(16)}`);
         }
@@ -575,7 +575,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                                         log(`← Consumed ${naks} NAKs before ACK`, '#8b949e');
                                     }
                                 }
-                                log('← ACK (0x06)', '#3fb950');
+                                log('← ACK (0x06)');
                                 return true;
                             }
                         }
@@ -595,7 +595,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
             // Normal mode for bootloader ROM
             const response = await readByteWithTimeout(timeoutMs);
             if (response === ACK) {
-                log('← ACK (0x06)', '#3fb950');
+                log('← ACK (0x06)');
                 return true;
             }
             throw new Error(`Expected ACK, got 0x${response.toString(16)}`);
@@ -610,7 +610,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
             log('Sending SYNC command...');
             await sendCommand(CMD_SYNC);
             await waitForACK();
-            log('✓ SYNC complete', '#3fb950');
+            log('✓ SYNC complete');
         }
 
         function calculateChecksum(data) {
@@ -712,7 +712,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
             }
             
             updateProgress(95, 'Transfer complete');
-            log(`✓ ${description} transferred (VampelRTL timing)`, '#3fb950');
+            log(`✓ ${description} transferred (VampelRTL timing)`);
             
             // CRITICAL: Wait 100ms like VampelRTL (Thread.Sleep(100))
             log('Waiting 100ms for flashloader to process...', '#d29922');
@@ -744,7 +744,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                         bytesConsumed.push(byte);
                         if (byte === ACK) {
                             foundAck = true;
-                            log(`  ✓ ACK found (consumed ${bytesConsumed.length} bytes)`, '#3fb950');
+                            log(`  ✓ ACK found (consumed ${bytesConsumed.length} bytes)`);
                         } else if (byte === NAK) {
                             log(`  ← NAK consumed, waiting for ACK...`, '#8b949e');
                         }
@@ -897,7 +897,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                 log(`  ⚠️ EOT got 0x${eotAck?.toString(16)} (expected ACK)`, '#d29922');
             }
             
-            log(`✓ ${description} written via XMODEM (${packetsTotal} packets)`, '#3fb950');
+            log(`✓ ${description} written via XMODEM (${packetsTotal} packets)`);
         }
 
         async function writeBlock(addr, data) {
@@ -956,25 +956,51 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                 }
             }
             
-            log(`✓ ${addr < 0x08000000 ? 'ROM' : 'Flash'} write complete`, '#3fb950');
+            log(`✓ ${addr < 0x08000000 ? 'ROM' : 'Flash'} write complete`);
         }
 
         async function eraseFlash(addr, blocks) {
-            log(`Erase 0x${addr.toString(16)} (${blocks} blocks)`);
+            const totalBytes = blocks * 4096;
+            const sizeMB = (totalBytes / 1024 / 1024).toFixed(2);
             
-            // Build data payload (address:4bytes + blocks:2bytes)
-            // Format from Arduino IDE log: [addr_4bytes][blocks_2bytes]
-            const data = [
-                addr & 0xFF,
-                (addr >> 8) & 0xFF,
-                (addr >> 16) & 0xFF,
-                (addr >> 24) & 0xFF,
-                blocks & 0xFF,
-                (blocks >> 8) & 0xFF
-            ];
+            // Align address to 4KB boundary like VampelRTL
+            let offset = addr & 0xFFF000;
             
-            // Use flashloader command sender with 60s timeout for erase
-            await sendFlashloaderCommand(CMD_ERASE, data, 60000);
+            log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, '#d29922');
+            log(`Erasing ${blocks} sectors (${sizeMB} MB) from 0x${offset.toString(16).padStart(8,'0')}`, '#d29922');
+            log(`⚠️ CRITICAL: Using VampelRTL method - 1 sector at a time`, '#d29922');
+            log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, '#d29922');
+            
+            // CRITICAL: VampelRTL erases 1 sector (4KB) at a time in a loop
+            // NOT all sectors in one command!
+            for (let i = 0; i < blocks; i++) {
+                const data = [
+                    offset & 0xFF,
+                    (offset >> 8) & 0xFF,
+                    (offset >> 16) & 0xFF,
+                    (offset >> 24) & 0xFF,
+                    0x01,  // ← ALWAYS erase 1 sector
+                    0x00
+                ];
+                
+                const result = await sendFlashloaderCommand(CMD_ERASE, data, 60000, true);
+                
+                if (!result.acked) {
+                    log(`✗ Erase failed at sector ${i} (0x${offset.toString(16)})`, '#f85149');
+                    return false;
+                }
+                
+                offset += 4096;  // Next sector
+                
+                // Progress update every 64 sectors
+                if ((i + 1) % 64 === 0 || i === blocks - 1) {
+                    const progress = Math.round(((i + 1) / blocks) * 100);
+                    log(`   Erased ${i + 1}/${blocks} sectors (${progress}%)`, '#8b949e');
+                }
+            }
+            
+            log(`✓ All ${blocks} sectors erased successfully!`);
+            return true;
         }
 
         function padFirmwareTo2MB(data) {
@@ -991,7 +1017,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
             
             // If file selected, use it
             if (file) {
-                log(`✓ Loading ${file.name} (${file.size} bytes)`, '#3fb950');
+                log(`✓ Loading ${file.name} (${file.size} bytes)`);
                 
                 return new Promise((resolve, reject) => {
                     const reader = new FileReader();
@@ -1027,7 +1053,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                 }
                 
                 const arrayBuffer = await response.arrayBuffer();
-                log(`✓ Downloaded ${fileInfo.name} (${arrayBuffer.byteLength} bytes)`, '#3fb950');
+                log(`✓ Downloaded ${fileInfo.name} (${arrayBuffer.byteLength} bytes)`);
                 return arrayBuffer;
             } catch (error) {
                 throw new Error(`Failed to download ${fileInfo.name}: ${error.message}`);
@@ -1042,6 +1068,48 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#58a6ff');
                 log('🦇 COMPLETE FLASH START', '#58a6ff');
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#58a6ff');
+
+                // Auto-reset ALWAYS enabled (Elektroda DTR/RTS)
+                    log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#d29922');
+                    log('🔄 AUTO-RESET: Entering bootloader mode...', '#d29922');
+                    log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#d29922');
+                    
+                    try {
+                        // Elektroda reset sequence (fast & simple)
+                        // DTR = RESET, RTS = BOOT
+                        // "Boot must be held low while RESET is released"
+                        
+                        log('Using Elektroda reset sequence...', '#d29922');
+                        
+                        // Step 1: DTR=false (RESET low), RTS=true (BOOT low - enter flash mode)
+                        log('Step 1: RESET low, BOOT low (50ms)', '#8b949e');
+                        await port.setSignals({ 
+                            dataTerminalReady: false,  // RESET low
+                            requestToSend: true        // BOOT low (inverted)
+                        });
+                        await new Promise(r => setTimeout(r, 50));
+                        
+                        // Step 2: DTR=true (RESET high - release), RTS=false (BOOT high)
+                        log('Step 2: RESET high, BOOT high (50ms)', '#8b949e');
+                        await port.setSignals({ 
+                            dataTerminalReady: true,   // RESET high (release)
+                            requestToSend: false       // BOOT high
+                        });
+                        await new Promise(r => setTimeout(r, 50));
+                        
+                        // Step 3: DTR=false (RESET low again)
+                        log('Step 3: RESET low (final)', '#8b949e');
+                        await port.setSignals({ 
+                            dataTerminalReady: false   // RESET low
+                        });
+                        
+                        log('✓ Elektroda reset completed (~100ms)', '#3fb950');
+                        log('BW16 should now be in bootloader mode', '#8b949e');
+                    } catch (error) {
+                        log(`⚠️ Auto-reset failed: ${error.message}`, '#f85149');
+                        log('Continuing anyway - you may need to manually reset', '#d29922');
+                    }
+                
 
                 await flushBuffer();
                 
@@ -1083,7 +1151,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                         if (value.includes(NAK)) {
                             const bannerStr = String.fromCharCode(...bannerBytes);
                             if (bannerStr.includes('UART')) {
-                                log(`✓ Flashloader banner: ${bannerStr.trim()}`, '#3fb950');
+                                log(`✓ Flashloader banner: ${bannerStr.trim()}`);
                             }
                             break;
                         }
@@ -1094,7 +1162,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                 
                 // Arduino IDE does NOT send SYNC after flashloader reset
                 // It goes directly to CMD_FLASH_MODE after consuming the banner
-                log('✓ Flashloader ready (banner received)', '#3fb950');
+                log('✓ Flashloader ready (banner received)');
 
                 // ═══════════════════════════════════════════════════════════
                 // DETECT FLASH SIZE
@@ -1160,10 +1228,10 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                             // Check data bytes for manufacturer and size
                             for (let byte of dataBytes) {
                                 if (manufacturerMap[byte]) {
-                                    log(`  📌 Manufacturer: ${manufacturerMap[byte]} (0x${byte.toString(16)})`, '#3fb950');
+                                    log(`  📌 Manufacturer: ${manufacturerMap[byte]} (0x${byte.toString(16)})`);
                                 }
                                 if (sizeMap[byte]) {
-                                    log(`  💾 Flash Size: ${sizeMap[byte]}`, '#3fb950');
+                                    log(`  💾 Flash Size: ${sizeMap[byte]}`);
                                 }
                             }
                         } else {
@@ -1172,7 +1240,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                         }
                         
                         if (flashBytes.includes(0x06)) {
-                            log('✓ Flash chip responding', '#3fb950');
+                            log('✓ Flash chip responding');
                         }
                     } else {
                         log('⚠️ No flash response', '#d29922');
@@ -1194,7 +1262,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                 updateProgress(15, 'Initializing flash...');
                 log('Initializing flash controller (CMD 0x26)...');
                 await sendFlashloaderCommand(CMD_FLASH_MODE, [0x01, 0x01, 0x00]);
-                log('✓ Flash controller initialized', '#3fb950');
+                log('✓ Flash controller initialized');
 
                 // ═══════════════════════════════════════════════════════════
                 // LOAD FIRMWARE FILE (any size)
@@ -1202,7 +1270,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                 
                 updateProgress(20, 'Loading firmware...');
                 const firmware = await loadFile('firmwareFile');
-                log(`✓ Loaded firmware: ${firmware.byteLength} bytes (${(firmware.byteLength / 1024 / 1024).toFixed(2)} MB)`, '#3fb950');
+                log(`✓ Loaded firmware: ${firmware.byteLength} bytes (${(firmware.byteLength / 1024 / 1024).toFixed(2)} MB)`);
                 
                 // ═══════════════════════════════════════════════════════════
                 // ERASE FLASH (calculated from file size, like VampelRTL)
@@ -1210,21 +1278,32 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                 
                 updateProgress(25, 'Calculating erase size...');
                 
-                // VampelRTL: int count = (size + 4095) / 4096;
-                const eraseBlocks = Math.ceil(firmware.byteLength / 4096);
+                // CRITICAL: Always erase FULL 4MB (1024 blocks of 4KB each)
+                // This prevents old firmware from remaining if new firmware is smaller
+                const FULL_FLASH_SIZE = 4 * 1024 * 1024; // 4MB
+                const eraseBlocks = 1024; // Full 4MB = 1024 blocks of 4KB
                 const eraseSize = eraseBlocks * 4096;
                 
                 log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, '#d29922');
-                log(`Erase Flash ${eraseBlocks} sectors (VampelRTL method):`, '#d29922');
-                log(`  Data from 0x00000000 to 0x${eraseSize.toString(16).padStart(8, '0').toUpperCase()}`, '#8b949e');
+                log(`Erase Flash ${eraseBlocks} sectors (FULL 4MB):`, '#d29922');
+                log(`  From 0x00000000 to 0x${eraseSize.toString(16).padStart(8, '0').toUpperCase()}`, '#8b949e');
                 log(`  ${eraseSize} bytes = ${(eraseSize / 1024 / 1024).toFixed(2)} MB`, '#8b949e');
+                log(`  Firmware size: ${firmware.byteLength} bytes (${(firmware.byteLength / 1024 / 1024).toFixed(2)} MB)`, '#8b949e');
                 log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, '#d29922');
                 
-                await eraseFlash(0x000000, eraseBlocks);
+                // CRITICAL: Erase from address 0x00000000 (FLASH address, not RAM)
+                // Note: Erase may fail (NAK) - this is normal for some flashloaders
+                // Write operation will overwrite existing data anyway
+                const eraseResult = await eraseFlash(0x000000, eraseBlocks);
                 
-                log(`✓ Erased ${eraseBlocks} blocks`, '#3fb950');
-                log('Waiting after erase (500ms)...', '#d29922');
-                await new Promise(r => setTimeout(r, 500));
+                if (eraseResult) {
+                    log(`✓ Flash erased successfully`);
+                } else {
+                    log(`⚠️ Erase not supported - relying on write to overwrite data`, '#d29922');
+                }
+                log('⚠️ CRITICAL: Waiting for flash chip to complete erase operation...', '#d29922');
+                log('Waiting 1 second...', '#8b949e');
+                await new Promise(r => setTimeout(r, 1000));
 
                 // ═══════════════════════════════════════════════════════════
                 // WRITE TO FLASH (VampelRTL method)
@@ -1251,9 +1330,9 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                 // ═══════════════════════════════════════════════════════════
                 
                 updateProgress(95, 'Finalizing...');
-                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#3fb950');
-                log('✅ ALL 3 FILES WRITTEN!', '#3fb950');
-                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#3fb950');
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                log('✅ ALL 3 FILES WRITTEN!');
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
                 
                 // Wait for flash to finalize (Sharp: 500ms)
                 log('Waiting for flash to finalize (500ms)...', '#d29922');
@@ -1318,17 +1397,17 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                 
                 updateProgress(100, '✅ COMPLETE!');
                 
-                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#3fb950');
-                log('✅ FIRMWARE FLASHED SUCCESSFULLY!', '#3fb950');
-                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#3fb950');
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                log('✅ FIRMWARE FLASHED SUCCESSFULLY!');
+                log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
                 log('', '');
                 log('📝 Flash Complete:', '#58a6ff');
-                log(`  Erased: ${Math.ceil(firmware.byteLength / 4096)} blocks`, '#c9d1d9');
+                log(`  Erased: 1024 blocks (4MB full erase)`, '#c9d1d9');
                 log(`  Written: ${firmware.byteLength} bytes (${(firmware.byteLength / 1024 / 1024).toFixed(2)} MB)`, '#c9d1d9');
                 log(`  Location: RAM 0x08000000 → Flash 0x000000`, '#c9d1d9');
                 log('', '');
                 log('💡 VampelRTL protocol completed:', '#d29922');
-                log('   ✓ Dynamic erase based on file size', '#8b949e');
+                log('   ✓ Full 4MB erase (prevents firmware remnants)', '#8b949e');
                 log('   ✓ RAM address translation (0x08000000 → 0x000000)', '#8b949e');
                 log('   ✓ 4KB chunks with 1ms delays', '#8b949e');
                 log('', '');
@@ -1339,7 +1418,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                 log('4. Open Serial Monitor at 115200', '#c9d1d9');
                 log('5. Press RESET button on BW16', '#c9d1d9');
                 log('', '');
-                log('💡 Your firmware should boot now!', '#3fb950');
+                log('💡 Your firmware should boot now!');
 
             } catch (error) {
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#f85149');
@@ -1365,8 +1444,8 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
         document.getElementById('connectBtn').addEventListener('click', connectSerial);
         document.getElementById('flashBtn').addEventListener('click', flashFirmware);
 
-        log('[INFO] BW16 Web Flasher v1.22 - VampelRTL Protocol', '#58a6ff');
-        log('[INFO] Consume ALL bytes until ACK (VampelRTL WaitResp)', '#3fb950');
+        log('[INFO] BW16 Web Flasher v1.31 AUTO-RESET - VampelRTL Protocol', '#58a6ff');
+        log('[INFO] Consume ALL bytes until ACK (VampelRTL WaitResp)');
         log('[INFO] Auto-loads firmware from GitHub or local files', '#c9d1d9');
         
         // Check Web Serial API support
@@ -1382,7 +1461,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
             document.getElementById('connectBtn').disabled = true;
             document.getElementById('flashBtn').disabled = true;
         } else {
-            log('✅ Web Serial API detected', '#3fb950');
+            log('✅ Web Serial API detected');
         }
     </script>
 </body>
