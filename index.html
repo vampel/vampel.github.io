@@ -167,12 +167,17 @@ Pin 3  - PA26_TXD (Any Color)     ---> Pin 14  - RX (Flipper receive data) ✅
 Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
             </pre>
             <p style="margin-top: 15px; line-height: 1.8;">
-                <strong>⚠️ Note:</strong> Used black PCB 22 pins BW16(RTL8720DN) 2MB Flash memory. 30 pins version doesn't work properly (blue PCB).<br>
-                <strong>🔧 Leds indication:</strong> <br>Solid green = BW16 ready<br>
-                                            Blinking blue = Scanning Wi-Fi networks<br>
-                                            Blinking red = Deauthentication of single network<br>
-                                            Blinking red (slower) = Deauthentication of all networks<br>
-                                            Blinking green = Beacon spam.<br>
+                <strong>⚠️ Note:</strong> Used black PCB 22 pins BW16(RTL8720DN). 30 pins version doesn't work properly (blue PCB).
+            </p>
+            <p style="line-height: 1.8;">
+                <strong>🔧 Leds indication:</strong><br>
+                Solid green = BW16 ready<br>
+                Blinking blue = Scanning Wi-Fi networks<br>
+                Blinking red = Deauthentication of single network<br>
+                Blinking red (slower) = Deauthentication of all networks<br>
+                Blinking green = Beacon spam.
+            </p>
+            <p style="line-height: 1.8;">
                 <strong>💻 Standalone Use:</strong> Can be used without Flipper Zero via Arduino IDE at 115200 baud
             </p>
             
@@ -1100,7 +1105,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                 log('🔍 DETECTING FLASH MEMORY SIZE', '#58a6ff');
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#58a6ff');
                 
-                // The BW16 typically has 2MB flash
+                // The BW16 typically has 4MB flash
                 // Flash size codes from SPI flash JEDEC ID:
                 // Byte 0: Manufacturer (0xEF=Winbond, 0xC8=GigaDevice)
                 // Byte 1: Memory type (typically 0x40 for SPI)
@@ -1163,7 +1168,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                             }
                         } else {
                             log('⚠️ Only ACK/NAK received, no flash info data', '#d29922');
-                            log('💡 BW16 typically has 2MB flash (assuming default)', '#8b949e');
+                            log('💡 BW16 typically has 4MB flash (assuming default)', '#8b949e');
                         }
                         
                         if (flashBytes.includes(0x06)) {
@@ -1171,12 +1176,12 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                         }
                     } else {
                         log('⚠️ No flash response', '#d29922');
-                        log('💡 BW16 typically has 2MB flash (assuming default)', '#8b949e');
+                        log('💡 BW16 typically has 4MB flash (assuming default)', '#8b949e');
                     }
                     
                 } catch (e) {
                     log(`⚠️ Flash detection error: ${e.message}`, '#d29922');
-                    log('💡 BW16 typically has 2MB flash (assuming default)', '#8b949e');
+                    log('💡 BW16 typically has 4MB flash (assuming default)', '#8b949e');
                 }
                 
                 await new Promise(r => setTimeout(r, 50));
