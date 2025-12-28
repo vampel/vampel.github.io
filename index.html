@@ -1070,17 +1070,17 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                 log('🦇 COMPLETE FLASH START', '#58a6ff');
                 log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#58a6ff');
 
-                // Auto-reset ALWAYS enabled (Elektroda DTR/RTS)
+                // Auto-reset ALWAYS enabled (VampelRTL DTR/RTS)
                     log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#d29922');
                     log('🔄 AUTO-RESET: Entering bootloader mode...', '#d29922');
                     log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '#d29922');
                     
                     try {
-                        // Elektroda reset sequence (fast & simple)
+                        // VampelRTL reset sequence (fast & simple)
                         // DTR = RESET, RTS = BOOT
                         // "Boot must be held low while RESET is released"
                         
-                        log('Using Elektroda reset sequence...', '#d29922');
+                        log('Using VampelRTL reset sequence...', '#d29922');
                         
                         // Step 1: DTR=false (RESET low), RTS=true (BOOT low - enter flash mode)
                         log('Step 1: RESET low, BOOT low (50ms)', '#8b949e');
@@ -1104,7 +1104,7 @@ Pin 4  - PA25_RXD (Any Color)     <--- Pin 13  - TX (Flipper transmit data) ✅
                             dataTerminalReady: false   // RESET low
                         });
                         
-                        log('✓ Elektroda reset completed (~100ms)', '#3fb950');
+                        log('✓ VampelRTL reset completed (~100ms)', '#3fb950');
                         log('BW16 should now be in bootloader mode', '#8b949e');
                     } catch (error) {
                         log(`⚠️ Auto-reset failed: ${error.message}`, '#f85149');
